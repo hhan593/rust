@@ -1,0 +1,23 @@
+# Build artifacts
+**/target/
+
+# IDE
+**/.idea/
+**/.vscode/
+
+# OS
+Thumbs.db
+Desktop.ini
+
+# Large files
+烽火戏诸侯-剑来.txt
+
+# Claude
+.claude/
+
+# Lock files (optional, uncomment if you don't want them)
+# **/Cargo.lock
+
+# Node
+**/node_modules/
+**/package-lock.json
