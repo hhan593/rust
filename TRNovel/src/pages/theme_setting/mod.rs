@@ -1,21 +1,23 @@
 use crate::{
-    cache::{ThemeConfig, ThemeColors},
-    components::{modal::shortcut_info_modal::KeyShortcutInfo},
     Result,
+    cache::{ThemeColors, ThemeConfig},
+    components::modal::shortcut_info_modal::KeyShortcutInfo,
 };
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::{
     layout::{Constraint, Flex, Layout},
     style::{Color, Stylize},
     text::{Line, Span},
-    widgets::{Block, Clear, List, ListState, Padding, Paragraph, Scrollbar, ScrollbarState, Widget},
+    widgets::{
+        Block, Clear, List, ListState, Padding, Paragraph, Scrollbar, ScrollbarState, Widget,
+    },
 };
-use ratatui_kit::{Component, Props};
 use ratatui_kit::prelude::*;
+use ratatui_kit::{Component, Props};
 
+use crate::hooks::UseThemeConfig;
 use tokio::sync::mpsc::Sender;
 use tui_widget_list::{ListBuilder, ListState as TuiListState, ListView};
-use crate::hooks::UseThemeConfig;
 
 mod select_color;
 use select_color::SelectColor;
@@ -91,10 +93,19 @@ impl ThemeSettingPage {
             state: TuiListState::default(),
             list: vec![
                 ("Text Color".to_string(), theme_config.colors.text_color),
-                ("Primary Color".to_string(), theme_config.colors.primary_color),
-                ("Warning Color".to_string(), theme_config.colors.warning_color),
+                (
+                    "Primary Color".to_string(),
+                    theme_config.colors.primary_color,
+                ),
+                (
+                    "Warning Color".to_string(),
+                    theme_config.colors.warning_color,
+                ),
                 ("Error Color".to_string(), theme_config.colors.error_color),
-                ("Success Color".to_string(), theme_config.colors.success_color),
+                (
+                    "Success Color".to_string(),
+                    theme_config.colors.success_color,
+                ),
                 ("Info Color".to_string(), theme_config.colors.info_color),
             ],
             theme_colors: theme_config.colors,
@@ -204,10 +215,7 @@ impl ThemeSettingPage {
         Ok(())
     }
 
-    pub fn handle_key_event(
-        &mut self, 
-        key: KeyEvent
-    ) -> Result<Option<KeyEvent>> {
+    pub fn handle_key_event(&mut self, key: KeyEvent) -> Result<Option<KeyEvent>> {
         if key.kind != crossterm::event::KeyEventKind::Press {
             return Ok(Some(key));
         }
@@ -260,9 +268,7 @@ impl ThemeSettingPage {
                 self.show_select_color = false;
                 Ok(None)
             }
-            _ => {
-                Ok(Some(key))
-            }
+            _ => Ok(Some(key)),
         }
     }
 
@@ -319,8 +325,7 @@ fn format_color_display(color: Color) -> String {
 pub fn ThemeSetting(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     let theme = hooks.use_theme_config();
 
-    let 
-     main_state = hooks.use_state(|| {
+    let main_state = hooks.use_state(|| {
         let mut s = ListState::default();
         s.select(Some(0));
         s
@@ -331,7 +336,7 @@ pub fn ThemeSetting(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
         s
     });
     let mut show_picker = hooks.use_state(|| false);
-    
+
     // 维护当前主题颜色配置
     let mut theme_colors_state = hooks.use_state(|| theme.colors);
 
@@ -393,9 +398,10 @@ pub fn ThemeSetting(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
                                             _ => {}
                                         }
                                         theme_colors_state.set(theme_colors);
-                                        
+
                                         // 保存到文件
-                                        let new_theme = ThemeConfig::from_colors(*theme_colors_state.read());
+                                        let new_theme =
+                                            ThemeConfig::from_colors(*theme_colors_state.read());
                                         let _ = new_theme.save();
                                     }
                                 }
@@ -424,9 +430,10 @@ pub fn ThemeSetting(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
                                     5 => theme_colors_state.read().info_color,
                                     _ => Color::Reset,
                                 };
-                                
+
                                 // 找到当前颜色在列表中的索引
-                                let color_idx = colors.iter()
+                                let color_idx = colors
+                                    .iter()
                                     .position(|(_, c)| *c == current_color)
                                     .unwrap_or(0);
                                 color_state.write().select(Some(color_idx));
@@ -452,41 +459,47 @@ pub fn ThemeSetting(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
                 Span::from("Text Color"),
                 Span::from(" "),
                 Span::from("■ ").fg(theme_colors.text_color),
-                Span::from(format_color_display(theme_colors.text_color)).fg(theme_colors.text_color),
+                Span::from(format_color_display(theme_colors.text_color))
+                    .fg(theme_colors.text_color),
             ]),
             Line::from(vec![
                 Span::from("Primary Color"),
                 Span::from(" "),
                 Span::from("■ ").fg(theme_colors.primary_color),
-                Span::from(format_color_display(theme_colors.primary_color)).fg(theme_colors.primary_color),
+                Span::from(format_color_display(theme_colors.primary_color))
+                    .fg(theme_colors.primary_color),
             ]),
             Line::from(vec![
                 Span::from("Warning Color"),
                 Span::from(" "),
                 Span::from("■ ").fg(theme_colors.warning_color),
-                Span::from(format_color_display(theme_colors.warning_color)).fg(theme_colors.warning_color),
+                Span::from(format_color_display(theme_colors.warning_color))
+                    .fg(theme_colors.warning_color),
             ]),
             Line::from(vec![
                 Span::from("Error Color"),
                 Span::from(" "),
                 Span::from("■ ").fg(theme_colors.error_color),
-                Span::from(format_color_display(theme_colors.error_color)).fg(theme_colors.error_color),
+                Span::from(format_color_display(theme_colors.error_color))
+                    .fg(theme_colors.error_color),
             ]),
             Line::from(vec![
                 Span::from("Success Color"),
                 Span::from(" "),
                 Span::from("■ ").fg(theme_colors.success_color),
-                Span::from(format_color_display(theme_colors.success_color)).fg(theme_colors.success_color),
+                Span::from(format_color_display(theme_colors.success_color))
+                    .fg(theme_colors.success_color),
             ]),
             Line::from(vec![
                 Span::from("Info Color"),
                 Span::from(" "),
                 Span::from("■ ").fg(theme_colors.info_color),
-                Span::from(format_color_display(theme_colors.info_color)).fg(theme_colors.info_color),
+                Span::from(format_color_display(theme_colors.info_color))
+                    .fg(theme_colors.info_color),
             ]),
         ]
     };
-    
+
     let main_list = List::new(main_list_items)
         .style(theme.basic.text)
         .highlight_style(theme.selected);
@@ -494,8 +507,12 @@ pub fn ThemeSetting(mut hooks: Hooks) -> impl Into<AnyElement<'static>> {
     let color_list = List::new(
         colors
             .iter()
-            .map(|(label, c)| Line::from(label.clone()).centered().style(theme.basic.text.fg(*c)))
-            .collect::<Vec<_>>()
+            .map(|(label, c)| {
+                Line::from(label.clone())
+                    .centered()
+                    .style(theme.basic.text.fg(*c))
+            })
+            .collect::<Vec<_>>(),
     )
     .style(theme.basic.text)
     .highlight_style(theme.selected);
