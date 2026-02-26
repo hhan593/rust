@@ -43,17 +43,21 @@ pub mod front_of_house {
 
     // pub mod: 外部可以访问此子模块
     pub mod hosting {
+        pub fn add_to_waitlist() {
+            println!("add to waitlist");
+        }
         // 私有常量：只有 hosting 模块内部能用
         const NAME: &str = "Alice";
 
         // pub fn: 外部可以调用
-        pub fn add_to_waitlist() {}
 
         // 私有函数：只有 hosting 模块内部能用，父模块 front_of_house 也不能调用
         fn seat_at_table() {}
 
         // pub fn: 外部可以调用；内部可以访问同模块的私有常量 NAME
         pub fn print_name() {
+            super::super::eat(); //super只能访问自己的直接父模块，如果是祖先模块要用 多个super进行访问
+            add_to_waitlist();
             println!("name is {}", NAME);
         }
     }
@@ -70,6 +74,44 @@ pub mod front_of_house {
 
 // pub fn: 这是 crate 根级别的公开函数，main.rs 可通过 restaurant::eat() 调用
 // 使用 crate:: 绝对路径访问内部模块的公开函数
-pub fn eat() {
+fn eat() {
     crate::front_of_house::hosting::add_to_waitlist();
+}
+
+mod back_of_house {
+    pub struct Breakfast {
+        pub toast: String,
+        seasonal_fruit: String,
+    }
+
+    impl Breakfast {
+        pub fn summer(toast: &str) -> Breakfast {
+            Breakfast {
+                toast: String::from(toast),
+                seasonal_fruit: String::from("peaches"),
+            }
+        }
+    }
+}
+
+fn eat_at_restaurant() {
+    let mut meal = back_of_house::Breakfast::summer("Rye");
+    meal.toast = String::from("Wheat");
+    println!("I'd like {} toast please", meal.toast);
+
+    // 不允许 因为是私有的属性 所以访问不到
+    // meal.seasonal_fruit = String::from("blueberries");
+}
+mod tests {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+}
+
+mod customer {
+
+    use crate::tests::hosting;
+    pub fn eat_at_restaurant() {
+        hosting::add_to_waitlist();
+    }
 }
