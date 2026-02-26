@@ -24,7 +24,7 @@ fn main() {
     //if let else 语法 本质上就是match,else 的情况，就是类似于占位符 _，表示匹配所有其他情况的意思
 
     if let y = x {
-        println!("y = {y}");
+        println!("y = {y:?}");
     } else {
         println!("x is None");
     }
