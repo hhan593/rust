@@ -50,6 +50,10 @@ fn demo_panic() {
     println!("--- 1. panic! 不可恢复错误 ---");
 
     // 显式调用 panic!（此处注释掉，否则程序会终止）
+    // thread 'main' (41304) panicked at src\main.rs:53:5:
+    // 程序崩溃了！
+    // note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+    // error: process didn't exit successfully: `target\debug\error.exe` (exit code: 101)
     // panic!("程序崩溃了！");
 
     // 运行时 panic 示例：数组越界（注释掉，否则程序会终止）
@@ -77,7 +81,7 @@ fn demo_catch_unwind() {
 
     // panic 的闭包 → Err
     let result = std::panic::catch_unwind(|| {
-        panic!("测试 panic");
+        panic!("测试 panic"); //显示调用 panic!
     });
     println!("  panic 闭包结果: is_err = {}", result.is_err()); // true
 
@@ -153,7 +157,7 @@ fn demo_result_nested_match() {
 }
 
 // ============================================================================
-// 5. unwrap_or_else：用闭包简化错误处理
+// 5. unwrap_or_else：用闭包简化错误处理 ,只在 None 和 Err 时执行闭包，避免深层 match 嵌套。
 // ============================================================================
 // unwrap_or_else 在 Err 时执行闭包，避免深层 match 嵌套。
 // 比 unwrap 更灵活，比 match 更简洁。
@@ -269,9 +273,7 @@ fn demo_option() {
     println!("  map(None * 2) = {:?}", no_value.map(|v| v * 2)); // None
 
     // and_then (flatmap): 链式操作
-    let result = some_value.and_then(|v| {
-        if v > 0 { Some(v * 10) } else { None }
-    });
+    let result = some_value.and_then(|v| if v > 0 { Some(v * 10) } else { None });
     println!("  and_then(Some(42)) = {:?}", result); // Some(420)
 
     // unwrap_or: 提供默认值
