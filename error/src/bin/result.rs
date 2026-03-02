@@ -1,3 +1,8 @@
+use std::error::Error;
+use std::fmt;
+use std::fs::File;
+use std::io::{self, ErrorKind, Read};
+#[derive(Debug)]
 fn main() {
     // ==========================================
     // 1. 初始化 Result 变量
@@ -91,4 +96,56 @@ fn main() {
     // 上面对 value 调用 map/and_then/is_ok 等方法后，value 仍然有效。
     let another_value: Result<i32, &str> = Ok(100);
     println!("另一个值的结果: {:?}", another_value.is_ok()); // 输出: true
+
+    //     方法名称,关注点,大白话解释,是否用到前一步内部的值？
+
+    let ok: Result<i32, &str> = Ok(42);
+    let err: Result<i32, &str> = Err("error");
+    // and,连续成功,第一步成了，直接看第二步的结果。,否（不关心第一步拿到了啥，只要是 Ok 就行）
+    println!("and: {:?}", ok.and(Ok(100))); // Ok(100);
+
+    // and_then,连续加工,第一步成了，拿着第一步的东西去做第二步。,是（用到前一个 Ok 里的值）
+    ok.and_then(|v| {
+        if v > 0 {
+            Ok(v * 2)
+        } else {
+            Err("必须为正数")
+        }
+    }); // Ok(84);
+
+    // or,失败替补,第一步砸了，直接用备选方案顶替。,否（不关心第一步是怎么砸的）,// or: 类似 || —— self 为 Err 时返回 other，否则返回 self 的 Ok 值。
+    ok.or(Err("没有这个文件")); // Ok(42)，因为 ok 是 Ok，不会用到 Err 备选方案;
+    // err.or(Ok(42)); // Ok(42)，因为 err 是 Err，会用到 Ok 备选方案;
+
+    // or_else,失败抢救,第一步砸了，分析砸掉的原因，尝试抢救。是（用到前一个 Err 里的错误信息）
+    err.or_else(|e| {
+        if e == "recoverable" {
+            Ok(0)
+        } else {
+            Err("still broken")
+        }
+    }); // Err("still broken")
+
+    println!("ok 的值: {:?}", ok.and(Err::<i32, &str>("other error")));
+
+    //     | 方法              | 适用场景                           |
+    // | --------------- | ------------------------------ |
+    // | `unwrap()`      | 快速原型、示例代码、确信不会失败的情况            |
+    // | `expect("msg")` | 生产代码中需要 panic 的地方（提供有意义的上下文信息） |
+
+    //如果文件不存在，会panic 并显示默认错误信息，提示我们文件无法打开。
+    let result = File::open("hello.txt").unwrap();
+
+    //如果文件不存在，会panic，并显示自定义错误信息,这个方法和 unwrap 类似，但允许我们提供一个自定义的错误消息，帮助我们更快地定位问题。
+
+    let result = File::open("hello.txt").expect("无法打开 hello.txt 文件");
+
+    // | 方法                    | Ok/Some 时 | Err/None 时   | 适用场景           |
+    // | --------------------- | --------- | ------------ | -------------- |
+    // | `unwrap()`            | 返回值       | panic（默认信息）  | 原型代码           |
+    // | `expect("msg")`       | 返回值       | panic（自定义信息） | 确信不会失败         |
+    // | `unwrap_or(default)`  | 返回值       | 返回 default   | 有合理默认值         |
+    // | `unwrap_or_else(f)`   | 返回值       | 调用 f()       | 默认值需要计算        |
+    // | `unwrap_or_default()` | 返回值       | T::default() | 类型有 Default 实现 |
+    // | `unwrap_err()`        | panic     | 返回错误值        | 测试代码中断言错误      |
 }
