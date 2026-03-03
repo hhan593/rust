@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+use std::fmt::Display;
 use trait_generics_lifetime::{NewsArticle, SocialPost, Summary};
 
 #[derive(Debug)]
@@ -47,6 +49,17 @@ fn main() {
     };
 
     println!("New article available! {}", post.summarize());
+
+    let posts = SocialPost {
+        username: String::from("John"),
+        content: String::from("Hello World!"),
+        reply: false,
+        repost: false,
+    };
+
+    println!("New social post available! {}", posts.summarize_author());
+
+    notify_tow(1, "Hello World!")
 }
 //抽象出lastest函数
 
@@ -61,3 +74,30 @@ fn latest(list: &[i32]) -> &i32 {
 
     largest
 }
+
+// Trait 作为参数（Trait Bound）
+pub fn notify(item: &impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+
+//使用泛型参数T 作为 Trait bound
+pub fn notify_plus<T: Summary>(item: &T) {
+    println!("Breaking news! {}", item.summarize());
+}
+// where 子句 适合复杂的约束列表 多泛型、多重 Trait 约束（如 $T$ 既要满足 $A$ 也要满足 $B$），或者当关联类型（Associated Types）约束非常长的时候
+fn notify_tow<T, U>(t: &T, u: &U) -> i32
+where
+    T: Display + Clone,
+    U: Debug + Display,
+{
+    println!("{}", t);
+    println!("{}", u);
+
+    return 0;
+}
+
+// 语法特性,impl Trait,Trait Bound (<T: Trait>),where 子句
+// 可读性,最高（最简洁）,中等,复杂场景下最高
+// 灵活性,较低,高,最高
+// 强制类型一致,不支持,支持,支持
+// 推荐写法,默认首选,涉及多个相同类型参数时,约束逻辑超过 2 个时
