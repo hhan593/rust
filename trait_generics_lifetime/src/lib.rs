@@ -10,7 +10,11 @@ pub trait Summary {
     /// # Returns
     ///
     /// 返回代表实例摘要的字符串
-    fn summarize(&self) -> String;
+    fn summarize(&self) -> String; //这个没有默认实现，所以在用到Summary trait 的类型时必须实现此方法
+    //提供默认实现
+    fn summarize_author(&self) -> String {
+        format!("(Read more from {}... 这是默认实现)", self.summarize())
+    }
 }
 
 /// 新闻文章结构体
@@ -58,6 +62,8 @@ impl Summary for SocialPost {
     /// # Returns
     ///
     /// 返回格式化的社交帖子摘要字符串
+    ///
+    ///
     fn summarize(&self) -> String {
         format!("{}: {}", self.username, self.content)
     }
