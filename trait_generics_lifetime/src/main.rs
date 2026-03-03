@@ -1,99 +1,137 @@
-use std::fmt::Debug;
-use std::fmt::Display;
-use trait_generics_lifetime::{NewsArticle, SocialPost, Summary};
+use std::fmt::{Debug, Display};
 
-#[derive(Debug)]
-//#[derive(Debug)] 只能加在结构体（struct）、枚举（enum）或联合体（union）的定义上面，不能加在函数（fn）上面
-struct Point<T, U> {
-    X: T,
-    Y: U,
-}
-//可以只用一个参数，但是要全部写上
-impl<T, U> Point<T, U> {
-    fn p(&self) -> &T {
-        &self.X
+// --- 模拟你本地库中的 Trait 定义 ---
+pub trait Summary {
+    fn summarize(&self) -> String;
+    fn summarize_author(&self) -> String {
+        String::from("(Read more...)")
     }
 }
 
-//定义方法时也可以为泛型指定限制（constraint）
+pub struct NewsArticle {
+    pub headline: String,
+    pub location: String,
+    pub author: String,
+    pub content: String,
+}
+
+impl Summary for NewsArticle {
+    fn summarize(&self) -> String {
+        format!("{}, by {} ({})", self.headline, self.author, self.location)
+    }
+}
+
+pub struct SocialPost {
+    pub username: String,
+    pub content: String,
+    pub reply: bool,
+    pub repost: bool,
+}
+
+impl Summary for SocialPost {
+    fn summarize(&self) -> String {
+        format!("{}: {}", self.username, self.content)
+    }
+    fn summarize_author(&self) -> String {
+        format!("@{}", self.username)
+    }
+}
+// ------------------------------------
+
+#[derive(Debug)]
+struct Point<T, U> {
+    x: T, // 推荐使用小写
+    y: U,
+}
+
+impl<T, U> Point<T, U> {
+    fn p(&self) -> &T {
+        &self.x
+    }
+}
+
 struct Test<T> {
     value: T,
 }
-//
-//这段代码意味着 Point<f32> 类型会有一个方法 distance_from_origin，
-//而其他 T 不是 f32 类型的 Point<T> 实例则没有定义此方法。这个方法计算点实例与坐标 (0.0, 0.0) 之间的距离，并使用了只能用于浮点型的数学运算符。
+
+// 特化实现：只有当 T 是 f32 时，Test 结构体才拥有这个方法
 impl Test<f32> {
     fn distance_from_origin(&self) -> f32 {
-        (self.value.powi(2)).sqrt()
+        self.value.powi(2).sqrt()
     }
 }
+
 fn main() {
+    // 1. 测试数组最大值 (使用泛型版本)
     let number_list = vec![34, 50, 25, 100, 65];
-    let largest = latest(&number_list);
-    println!("The largest number is {largest}");
+    if let Some(largest) = latest(&number_list) {
+        println!("The largest number is {largest}");
+    }
 
-    let integer = Point { X: 5, Y: '1' };
-    println!("{:?}", integer.X);
-    println!("{:?}", integer.Y);
-    let x = integer.p();
-    println!("{:?}", x);
+    // 2. 测试泛型结构体 Point
+    let integer = Point { x: 5, y: '1' };
+    println!("Point: x = {:?}, y = {:?}", integer.x, integer.y);
+    let x_ref = integer.p();
+    println!("Value from method p: {:?}", x_ref);
 
+    // 3. 测试 NewsArticle (Trait 对象用法)
     let post = NewsArticle {
         headline: String::from("Penguins win the Stanley Cup!"),
         location: String::from("Pittsburgh, PA, USA"),
         author: String::from("Iceburgh"),
-        content: String::from(
-            "The Pittsburgh Penguins once again are the best
-                               hockey team in the NHL.",
-        ),
+        content: String::from("The Pittsburgh Penguins are the best."),
     };
+    println!("New article: {}", post.summarize());
 
-    println!("New article available! {}", post.summarize());
-
+    // 4. 测试 SocialPost
     let posts = SocialPost {
         username: String::from("John"),
         content: String::from("Hello World!"),
         reply: false,
         repost: false,
     };
+    println!("Author: {}", posts.summarize_author());
 
-    println!("New social post available! {}", posts.summarize_author());
-
-    notify_tow(1, "Hello World!")
+    // 5. 调用复杂的 where 约束函数
+    // 传入的第一个参数 &1 满足 Display + Clone
+    // 第二个参数 &"Hello" 满足 Clone + Debug + Display
+    notify_tow(&1, &"Hello World!");
 }
-//抽象出lastest函数
 
-fn latest(list: &[i32]) -> &i32 {
+/// 泛型版本的获取最大值函数
+/// 约束 T 必须实现 PartialOrd（支持比较）和 Copy（方便移动值）
+fn latest<T: PartialOrd + Copy>(list: &[T]) -> Option<&T> {
+    if list.is_empty() {
+        return None;
+    }
     let mut largest = &list[0];
-
     for number in list {
         if number > largest {
             largest = number;
         }
     }
-
-    largest
+    Some(largest)
 }
 
-// Trait 作为参数（Trait Bound）
+// Trait 作为参数 (语法糖形式)
 pub fn notify(item: &impl Summary) {
     println!("Breaking news! {}", item.summarize());
 }
 
-//使用泛型参数T 作为 Trait bound
+// Trait Bound 形式
 pub fn notify_plus<T: Summary>(item: &T) {
     println!("Breaking news! {}", item.summarize());
 }
-// where 子句 适合复杂的约束列表 多泛型、多重 Trait 约束（如 $T$ 既要满足 $A$ 也要满足 $B$），或者当关联类型（Associated Types）约束非常长的时候
+
+// where 子句：适合处理复杂或多个泛型的约束
 fn notify_tow<T, U>(t: &T, u: &U) -> i32
 where
     T: Display + Clone,
-    U: Debug + Display,
+    U: Clone + Debug + Display,
 {
-    println!("{}", t);
-    println!("{}", u);
-
-    return 0;
+    println!("Data T: {}", t);
+    println!("Data U: {}", u);
+    0
 }
 
 // 语法特性,impl Trait,Trait Bound (<T: Trait>),where 子句
