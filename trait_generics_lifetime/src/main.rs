@@ -139,3 +139,60 @@ where
 // 灵活性,较低,高,最高
 // 强制类型一致,不支持,支持,支持
 // 推荐写法,默认首选,涉及多个相同类型参数时,约束逻辑超过 2 个时
+
+//tarit 作为返回类型,但是只能返回单一类型，就是不能在里边做判断
+struct Tweet {
+    pub username: String,
+    pub content: String,
+    pub reply: bool,
+    pub retweet: bool,
+}
+
+impl Summary for Tweet {
+    fn summarize(&self) -> String {
+        format!("{}: {}", self.username, self.content)
+    }
+}
+fn returns_summarizable() -> impl Summary {
+    Tweet {
+        username: String::from("horse_ebooks"),
+        content: String::from("of course, as you probably already know, people"),
+        reply: false,
+        retweet: false,
+    }
+}
+
+/// 泛型结构体Pair，持有两个相同类型的值
+struct Pair<T> {
+    x: T,
+    y: T,
+}
+
+/// 为泛型类型T实现Pair结构体的基本功能
+impl<T> Pair<T> {
+    /// 创建一个新的Pair实例
+    ///
+    /// # 参数
+    /// * `x` - 第一个值
+    /// * `y` - 第二个值
+    ///
+    /// # 返回值
+    /// 返回包含x和y的新Pair实例
+    fn new(x: T, y: T) -> Self {
+        Self { x, y }
+    }
+}
+
+/// 为实现了Display和PartialOrd trait的泛型类型T实现Pair结构体的比较功能
+impl<T: Display + PartialOrd> Pair<T> {
+    /// 比较并打印两个值中较大的那个
+    ///
+    /// 此方法会检查x和y的大小关系，并打印出较大的成员值
+    fn cmp_display(&self) {
+        if self.x >= self.y {
+            println!("The largest member is x = {}", self.x);
+        } else {
+            println!("The largest member is y = {}", self.y);
+        }
+    }
+}
