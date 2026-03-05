@@ -22,8 +22,8 @@
  */
 // 修正方式：加上生命周期标注 <'a>
 // fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
-// fn longest(x: &str, y: &str) -> &str {
-// Rust 建议：if 条件不需要加小括号 ()
+//     // fn longest(x: &str, y: &str) -> &str {
+//     // Rust 建议：if 条件不需要加小括号 ()
 //     if x.len() > y.len() {
 //         x // 如果返回 x，那么返回值的生命周期必须涵盖 x 的作用域
 //     } else {
@@ -84,72 +84,3 @@ impl<'a> ImportantExcerpt<'a> {
         self.part
     }
 }
-//生命周期的三条规则
-// 规则 1：在每个参数类型中，有且只有一个生命周期参数。每个引用参数都获得独立的生命周期参数。
-// fn foo(x: &str)          → fn foo<'a>(x: &'a str)
-// fn foo(x: &str, y: &str) → fn foo<'a, 'b>(x: &'a str, y: &'b str)
-
-// 规则 2**：如果只有一个输入生命周期参数，该生命周期赋予所有输出生命周期。
-// fn foo(x: &str) -> &str  → fn foo<'a>(x: &'a str) -> &'a str
-
-//规则 3**：如果有 `&self` 或 `&mut self` 参数，`self` 的生命周期赋予所有输出生命周期。
-// fn method(&self, x: &str) -> &str  → fn method<'a, 'b>(&'a self, x: &'b str) -> &'a str
-
-//3.8 'static 生命周期
-// 'static’生命周期表示一个静态字符串，它的生命周期比程序运行更长。
-
-// 字符串字面量都是 'static（存储在程序二进制中）
-// let s: &'static str = "我有 static 生命周期";
-
-// 常量和静态变量隐含 'static
-// static GREETING: &str = "Hello"; // 等价于 &'static str
-// const PI: &f64 = &3.14159; // 等价于 &'static f64
-
-//`T: 'static` 的含义：
-
-// T: 'static 意味着 T 可以安全地存活任意长时间
-// 它不意味着 T 必须是 'static 引用！
-// 拥有所有权的类型（如 String、Vec<T>）天然满足 'static
-// fn print_it<T: Display + 'static>(input: T) {
-//     println!("{}", input);
-// }
-
-// fn main() {
-//     let s = String::from("hello");
-//     print_it(s); // 正确！String 拥有数据，满足 'static
-// print_it(&s); // 编译错误！&s 的生命周期不是 'static
-// }
-
-//4.3 Trait 对象与生命周期
-
-// trait Greet {
-//     fn greet(&self) -> String;
-// }
-
-// struct Person {
-//     name: String,
-// }
-
-// impl Greet for Person {
-//     fn greet(&self) -> String {
-//         format!("Hello, I'm {}", self.name)
-//     }
-// }
-
-// 场景 1：返回一个“自力更生”的 Trait 对象
-// 这里 Box<dyn Greet> 实际上隐藏了 Box<dyn Greet + 'static>
-// 因为 Person 拥有自己所有的数据（String），它不依赖外部任何引用。
-// fn create_greeter() -> Box<dyn Greet> {
-//     Box::new(Person {
-//         name: "Alice".into(),
-//     })
-// }
-
-// 场景 2：返回一个“寄生”的 Trait 对象
-// 这里的 Box<dyn Greet + 'a> 明确告诉编译器：
-// “这个 Trait 对象里面装着一个引用，它的寿命不能超过 'a（也就是输入数组的寿命）”
-// fn get_greeter<'a>(people: &'a [Person]) -> Box<dyn Greet + 'a> {
-// 假设我们已经为 &Person 实现了 Greet (此处省略实现代码)
-// 因为 &people[0] 是从外部借来的，所以它必须带上生命周期标签 'a
-// Box::new(&people[0])
-// }
