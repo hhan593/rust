@@ -35,6 +35,7 @@ mod tests {
     // 测试 2：使用 Result 编写测试
     // 这种写法的好处是：你可以直接在测试里使用 `?` 操作符，代码更简洁
     #[test]
+    #[ignore = "reason"]
     fn it_works() -> Result<(), String> {
         let result = add(2, 2);
 
@@ -45,4 +46,7 @@ mod tests {
             Err(String::from("two plus two does not equal four"))
         }
     }
+
+    //如果我们只希望运行被忽略的测试，可以使用 cargo test -- --ignored
+    //如果你希望不管是否忽略都要运行全部测试，可以运行 cargo test -- --include-ignored
 }
