@@ -23,3 +23,24 @@ fn main() {
 
     println!("With text:\n{contents}");
 }
+
+//提取命令行参数函数
+
+struct Config {
+    query: String,
+    file_path: String,
+}
+fn parge_params(args: &[String]) -> Config {
+    let query = &args[1].clone();
+    let file_path = &args[2].clone();
+
+    Config { query, file_path }
+}
+// main 函数中的责任应该被限制为：
+
+// 使用参数值调用命令行解析逻辑
+// 设置任何其他的配置
+// 调用 lib.rs 中的 run 函数
+// 如果 run 返回错误，则进行错误处理
+
+// main函数处理程序运行，lib.rs处理业务逻辑
