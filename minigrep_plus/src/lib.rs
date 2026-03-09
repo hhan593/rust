@@ -1,12 +1,16 @@
 use std::error::Error; // 引入错误 trait
-use std::fs; // 引入文件系统库，用于读取文件
+use std::{env, fs}; // 引入文件系统库，用于读取文件
 
 pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     // 读取文件内容。? 是 Rust 的语法糖：如果成功则解包，如果失败则立即返回该错误
     let contents = fs::read_to_string(config.filename)?;
-
+let results =  if !config.ignored_case {
+    search(&config.query, &contents)
+}else {
+    search_case_insensitive(&config.query, &contents)
+};
     // println!("文件内容如下：\n{contents}");
- for  line in  search(&config.query, &contents){
+ for  line in  results {
      println!("{}", line);
  }
     // 运行成功，返回 Ok 包含 unit 类型 ()
@@ -17,6 +21,7 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
 pub struct Config {
     pub query: String,
     pub filename: String,
+    pub ignored_case: bool,
 }
 
 impl Config {
@@ -31,8 +36,9 @@ impl Config {
         // 使用 clone() 将参数所有权从引用的切片中转移到结构体字段中
         let query = args[1].clone();
         let filename = args[2].clone();
+        let ignored_case = env::var("IGNORE_CASE").is_ok();
 
-        Ok(Config { query, filename })
+        Ok(Config { query, filename, ignored_case })
     }
 }
 //// 编译器不知道返回的 &str 是跟 query 混的，还是跟 contents 混的,所有要加生命周期参数
@@ -47,7 +53,17 @@ pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
 
     results
 }
-
+//大小写不敏感的search函数
+pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
+    let query = query.to_lowercase();
+    let mut results = Vec::new();
+    for line in contents.lines() {
+        if line.to_lowercase().contains(&query) {
+            results.push(line);
+        }
+    }
+    results
+}
 // 测试模块
 
 #[cfg(test)]
