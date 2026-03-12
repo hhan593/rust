@@ -234,11 +234,31 @@ fn main() {
 
 ```rust
 // 使用泛型 + trait bound
+// -----------------------------------------------------------------------------
+// 1. Fn Trait
+// -----------------------------------------------------------------------------
+// F: Fn(i32) -> i32
+// 含义：F 是一个闭包或函数，它接受一个 i32 参数，返回一个 i32。
+// 特点：
+//   - 通过不可变引用 (&self) 调用。
+//   - 闭包内部不能修改其捕获的环境变量。
+//   - 可以无限次调用。
+// 适用场景：只读访问外部变量的闭包。
 fn apply<F: Fn(i32) -> i32>(f: F, x: i32) -> i32 {
     f(x)
 }
 
-// 使用 where 子句（更清晰）
+// -----------------------------------------------------------------------------
+// 2. FnMut Trait (使用 where 子句写法)
+// -----------------------------------------------------------------------------
+// F: FnMut(i32) -> i32
+// 含义：F 是一个闭包，接受 i32 返回 i32。
+// 特点：
+//   - 通过可变引用 (&mut self) 调用。
+//   - 闭包内部可以修改其捕获的环境变量。
+//   - 可以多次调用。
+// 注意：参数 f 必须声明为 mut (mut f: F)，因为调用 FnMut 需要可变借用。
+// 适用场景：需要累加、计数或修改外部状态的闭包。
 fn apply_mut<F>(mut f: F, x: i32) -> i32
 where
     F: FnMut(i32) -> i32,
@@ -246,14 +266,131 @@ where
     f(x)
 }
 
-// 使用 FnOnce
+// -----------------------------------------------------------------------------
+// 3. FnOnce Trait
+// -----------------------------------------------------------------------------
+// F: FnOnce(i32) -> i32
+// 含义：F 是一个闭包，接受 i32 返回 i32。
+// 特点：
+//   - 通过值 (self) 调用，意味着调用后闭包本身会被“消耗”（move）。
+//   - 闭包内部可以移动（consume）其捕获的变量。
+//   - 只能调用一次（因为调用后它就不存在了）。
+// 关系：Fn 和 FnMut 都自动实现了 FnOnce（因为如果能重复调用，自然也能调用一次）。
+// 适用场景：一次性操作，或者需要拥有捕获变量所有权的闭包（例如线程启动、资源清理）。
 fn apply_once<F: FnOnce(i32) -> i32>(f: F, x: i32) -> i32 {
     f(x)
 }
 
 fn main() {
+    // 定义一个简单的闭包：将输入乘以 2
+    // 这个闭包不捕获任何外部变量，因此它同时实现了 Fn, FnMut, 和 FnOnce。
     let double = |x| x * 2;
-    println!("{}", apply(double, 5));  // 10
+
+    // 调用 apply (需要 Fn)
+    // double 可以通过不可变引用调用，完全符合要求。
+    println!("{}", apply(double, 5));  // 输出: 10
+
+    // 下面的代码演示了不同 trait 的实际区别（仅供理解，原代码未执行）：
+
+    /*
+    // 场景 A: 修改外部变量 (需要 FnMut)
+    let mut sum = 0;
+    let mut add_to_sum = |x| { sum += x; };
+    // apply(add_to_sum, 5);  // 错误！apply 需要 Fn，但 add_to_sum 修改了 sum，只实现了 FnMut
+    apply_mut(add_to_sum, 5); // 正确！apply_mut 需要 FnMut
+
+    // 场景 B: 移动外部变量 (需要 FnOnce)
+    let s = String::from("hello");
+    let consume = |x| {
+        drop(s); // 移动并丢弃 s
+        x
+    };
+    // apply(consume, 5);     // 错误！consume 移动了 s，只实现了 FnOnce
+    // apply_mut(consume, 5); // 错误！同上
+    apply_once(consume, 5);   // 正确！apply_once 需要 FnOnce，调用后 consume 被销毁
+    */
+}
+// 1. 接受 Fn 的函数：闭包不能修改捕获的变量
+fn run_fn<F>(f: F, val: i32) -> i32
+where
+    F: Fn(i32) -> i32,
+{
+    f(val)
+}
+
+// 2. 接受 FnMut 的函数：闭包可以修改捕获的变量
+fn run_fn_mut<F>(mut f: F, val: i32) -> i32
+where
+    F: FnMut(i32) -> i32,
+{
+    f(val)
+}
+
+// 3. 接受 FnOnce 的函数：闭包可以消耗（移动）捕获的变量
+fn run_fn_once<F>(f: F, val: i32) -> i32
+where
+    F: FnOnce(i32) -> i32,
+{
+    f(val)
+}
+
+fn main() {
+    println!("=== 场景 1: Fn (只读) ===");
+    let multiplier = 10;
+    // 这个闭包只读取了 multiplier，没有修改它
+    let multiply = |x| x * multiplier;
+
+    // 可以多次调用，因为它不改变状态
+    println!("结果 1: {}", run_fn(multiply, 5)); // 50
+    println!("结果 2: {}", run_fn(multiply, 6)); // 60
+    // multiplier 依然可用
+    println!("外部变量 multiplier: {}", multiplier);
+
+
+    println!("\n=== 场景 2: FnMut (修改状态) ===");
+    let mut counter = 0;
+    // 这个闭包修改了外部变量 counter (使用了 +=)
+    // 因此它只实现了 FnMut 和 FnOnce，**没有**实现 Fn
+    let mut add_and_count = |x| {
+        counter += 1; // 修改捕获的环境
+        x + counter
+    };
+
+    // ❌ 下面这行会报错，因为 run_fn 需要 Fn，但 add_and_count 是 FnMut
+    // println!("{}", run_fn(add_and_count, 5));
+
+    // ✅ 必须使用 run_fn_mut
+    println!("结果 1: {}", run_fn_mut(&mut add_and_count, 5)); // counter 变为 1, 结果 6
+    println!("结果 2: {}", run_fn_mut(&mut add_and_count, 5)); // counter 变为 2, 结果 7
+
+    // 注意：counter 的值已经被闭包修改了
+    println!("外部变量 counter: {}", counter); // 输出 2
+
+
+    println!("\n=== 场景 3: FnOnce (消耗所有权) ===");
+    let greeting = String::from("Hello");
+    // 这个闭包移动（move）了 greeting 的所有权
+    // 因此它**只**实现了 FnOnce，不能再次调用
+    let consume_string = |x| {
+        // greeting 被移动到闭包内部，并在打印后被丢弃
+        println!("闭包内使用了: {}", greeting);
+        x
+    };
+
+    // ❌ 下面两行都会报错：
+    // 1. run_fn 需要 Fn (不行，因为 greeting 被移动了)
+    // 2. run_fn_mut 需要 FnMut (不行，同上)
+    // println!("{}", run_fn(consume_string, 5));
+    // println!("{}", run_fn_mut(consume_string, 5));
+
+    // ✅ 必须使用 run_fn_once
+    println!("结果: {}", run_fn_once(consume_string, 5));
+
+    // ❌ 下面这行会报错，因为 greeting 已经在闭包调用时被移走了
+    // println!("{}", greeting);
+
+    // ❌ 下面这行也会报错，因为 consume_string 调用一次后就失效了
+    // println!("{}", run_fn_once(consume_string, 5));
 }
 ```
 
@@ -305,18 +442,102 @@ fn main() {
 
 ```rust
 fn main() {
+    // ------------------------------------------------------------------
+    // 1. 演示问题：即使代码一模一样，闭包类型也是唯一的
+    // ------------------------------------------------------------------
+
     let closure_a = |x: i32| x + 1;
     let closure_b = |x: i32| x + 1;
 
-    // closure_a 和 closure_b 是不同的类型，即使签名相同！
-    // let mut f = closure_a;
-    // f = closure_b;  // 错误！类型不匹配
+    // 在 Rust 中，每个闭包都有一个编译器生成的唯一匿名类型。
+    // 比如 closure_a 的类型可能是 __ClosureTypeA，closure_b 是 __ClosureTypeB。
+    // 它们互不兼容。
 
-    // 如果需要统一类型，可使用函数指针或 Box<dyn Fn>
-    let funcs: Vec<Box<dyn Fn(i32) -> i32>> = vec![
+    // ❌ 下面这段代码会报错：
+    /*
+    let mut f = closure_a;
+    f = closure_b; // 错误！expected closure type A, found closure type B
+    */
+
+    // 甚至不能直接放入同一个 Vec，因为 Vec<T> 要求所有元素类型 T 必须完全一致。
+    // let tasks = vec![closure_a, closure_b]; // ❌ 报错：mismatched types
+
+    // ------------------------------------------------------------------
+    // 2. 解决方案：使用 Box<dyn Fn> 进行“类型擦除”
+    // ------------------------------------------------------------------
+
+    // 我们把具体的闭包放入 Box 中，并转换为 trait object (dyn Fn)。
+    // 此时，它们的类型都变成了统一的：Box<dyn Fn(i32) -> i32>
+    let tasks: Vec<Box<dyn Fn(i32) -> i32>> = vec![
         Box::new(closure_a),
         Box::new(closure_b),
+        // 我们还可以混入其他逻辑完全不同的闭包，只要签名匹配
+        Box::new(|x| x * 10),
+        Box::new(|x| {
+            println!("正在处理: {}", x);
+            x - 5
+        }),
     ];
+
+    // ------------------------------------------------------------------
+    // 3. 统一调用
+    // ------------------------------------------------------------------
+    println!("开始执行任务队列...");
+
+    for (index, task) in tasks.iter().enumerate() {
+        // task 的类型是 &Box<dyn Fn(...)>
+        // 我们可以直接像调用函数一样调用它：task(input)
+        let result = task(10);
+        println!("任务 #{} 的结果: {}", index, result);
+    }
+
+    // ------------------------------------------------------------------
+    // 4. 进阶：在结构体中存储不同类型的回调
+    // ------------------------------------------------------------------
+    struct Button {
+        label: String,
+        // 按钮点击时执行的逻辑可以是任意闭包
+        on_click: Box<dyn Fn()>,
+    }
+
+    let mut count = 0;
+
+    // 按钮 A：只是打印
+    let btn_a = Button {
+        label: "Print".to_string(),
+        on_click: Box::new(|| println!("按钮 A 被点击了！")),
+    };
+
+    // 按钮 B：修改外部变量 (需要 FnMut，所以这里要用 Box<dyn FnMut>)
+    // 注意：如果闭包内部修改了变量，Box 里的 trait 也要改成 FnMut
+    let mut btn_b = Button {
+        label: "Count".to_string(),
+        on_click: Box::new(|| {
+            // 这里的 count 需要被捕获并修改，所以这个闭包是 FnMut
+            // 但我们的 Button 结构体定义的是 Fn，这里会报错！
+            // 为了解决这个问题，我们通常需要在结构体里存 FnMut 或者用 RefCell
+        }),
+    };
+
+    // 修正后的结构体示例 (支持修改状态)
+    struct MutableButton {
+        label: String,
+        on_click: Box<dyn FnMut()>,
+    }
+
+    let mut counter = 0;
+    let btn_count = MutableButton {
+        label: "Counter".to_string(),
+        on_click: Box::new(|| {
+            counter += 1;
+            println!("计数器现在是: {}", counter);
+        }),
+    };
+
+    // 注意：调用 FnMut 需要可变借用
+    let mut active_btn = btn_count;
+    (active_btn.on_click)(); // 输出: 计数器现在是: 1
+    (active_btn.on_click)(); // 输出: 计数器现在是: 2
 }
 ```
 
@@ -344,9 +565,10 @@ fn main() {
     let closure = |x: i32| x * factor;
 
     // 函数指针可以直接存储在 Vec 中
+    // 注意：这里必须明确告诉编译器我们要把它当成 fn 指针
     let operations: Vec<fn(i32) -> i32> = vec![
-        |x| x + 1,
-        |x| x * 2,
+        |x: i32| x + 1, // 编译器发现目标类型是 fn，且闭包无捕获，允许转换
+        |x: i32| x * 2,
     ];
 
     // 闭包需要 Box<dyn Fn> 才能存储在集合中
@@ -367,44 +589,65 @@ fn main() {
 ### 场景 1：懒加载（Option::unwrap_or_else）
 
 ```rust
+// ============================================================================
+// 场景 1：惰性求值 (Lazy Evaluation)
+// ============================================================================
+// 用途：避免不必要的昂贵计算。
+// 原理：unwrap_or_else 接收一个闭包。只有当 Option 为 None 时，闭包才会被执行。
+//       如果是 Some，闭包内的代码（如数据库查询、复杂计算）完全不会运行。
+
 struct Inventory {
     shirts: Vec<String>,
 }
 
 impl Inventory {
     fn giveaway(&self, user_preference: Option<String>) -> String {
-        // 闭包只在 None 时才执行（惰性求值）
+        // 如果 user_preference 是 Some(val)，直接返回 val，闭包 || ... 被忽略。
+        // 如果 user_preference 是 None，才执行 self.most_stocked()。
+        // 对比：如果用 unwrap_or(self.most_stocked())，无论是否需要，most_stocked 都会先执行。
         user_preference.unwrap_or_else(|| self.most_stocked())
     }
 
     fn most_stocked(&self) -> String {
-        // 复杂计算...
+        println!("-> [场景1] 正在执行昂贵的库存计算...");
         "Red".to_string()
     }
 }
-```
 
-### 场景 2：迭代器链
+// ============================================================================
+// 场景 2：迭代器链 (Iterator Chains)
+// ============================================================================
+// 用途：函数式数据处理管道。
+// 原理：filter, map 等方法接收闭包作为参数，定义数据如何过滤和转换。
+//       闭包语法简洁，非常适合这种“一次性的逻辑块”。
 
-```rust
-fn main() {
+fn scene_iterator() {
     let numbers = vec![1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
     let result: Vec<i32> = numbers
-        .iter()
-        .filter(|&&x| x % 2 == 0)   // 闭包1：过滤偶数
-        .map(|&x| x * x)             // 闭包2：平方
+        .iter()                 // 产生迭代器，元素类型为 &i32
+        // 闭包 1: 过滤
+        // 参数 x 是 &&i32 (迭代器的引用 + filter 内部的引用)，所以用 |&&x| 解构两次拿到 i32
+        .filter(|&&x| x % 2 == 0)
+        // 闭包 2: 转换
+        // 此时元素是 &i32，用 |&x| 解构拿到 i32
+        .map(|&x| x * x)
         .collect();
 
-    println!("{:?}", result);  // [4, 16, 36, 64, 100]
+    println!("-> [场景2] 偶数平方结果: {:?}", result);
+    // 输出: [4, 16, 36, 64, 100]
 }
-```
 
-### 场景 3：回调和事件处理
+// ============================================================================
+// 场景 3：回调和事件处理 (Callbacks & Event Handling)
+// ============================================================================
+// 用途：存储行为供将来调用（策略模式/观察者模式）。
+// 原理：使用 Box<dyn Fn()> 将不同类型的闭包统一存储。
+//       'static 约束确保闭包不持有短期借用的引用，适合长期存储。
 
-```rust
 struct Button {
     label: String,
+    // 存储一个可选的、堆分配的、动态分发的函数对象
     on_click: Option<Box<dyn Fn()>>,
 }
 
@@ -413,89 +656,155 @@ impl Button {
         Button { label: label.to_string(), on_click: None }
     }
 
+    // 泛型 F 接收任意闭包类型
+    // 'static: 闭包不能借用栈上的临时变量（因为 Button 可能活得更久）
+    // Fn(): 闭包无参数、无返回值、可多次调用
     fn set_on_click<F: 'static + Fn()>(&mut self, handler: F) {
+        // 装箱：将具体类型的闭包转换为 trait 对象
         self.on_click = Some(Box::new(handler));
     }
 
     fn click(&self) {
         if let Some(handler) = &self.on_click {
-            handler();
+            println!("-> [场景3] 按钮 '{}' 被点击，执行回调...", self.label);
+            handler(); // 动态调用
         }
     }
 }
-```
 
-### 场景 4：Result / Option 的高级用法
+// ============================================================================
+// 场景 4：Result / Option 的高级用法
+// ============================================================================
+// 用途：优雅的错误处理和类型转换。
+// 原理：利用闭包在链式调用中处理 Ok/Some 或 Err/None 的情况。
 
-```rust
-fn main() {
+fn scene_error_handling() {
     let strings = vec!["1", "2", "abc", "4"];
 
-    // filter_map 结合闭包：过滤并转换
+    // filter_map: 结合过滤和映射
+    // 闭包逻辑：尝试解析字符串。如果成功 (Ok)，返回 Some(num)；如果失败 (Err)，ok() 转为 None。
+    // filter_map 会自动过滤掉 None，保留 Some 中的值。
     let numbers: Vec<i32> = strings
         .iter()
-        .filter_map(|s| s.parse().ok())
+        .filter_map(|s| s.parse::<i32>().ok())
         .collect();
 
-    println!("{:?}", numbers);  // [1, 2, 4]
+    println!("-> [场景4] 解析成功的数字: {:?}", numbers); // [1, 2, 4]
 
-    // map_err 转换错误类型
+    // map_err: 转换错误类型而不改变成功值
+    // 如果解析失败，闭包将标准错误 e 转换为自定义的 String 错误信息
     let result: Result<i32, String> = "42"
         .parse::<i32>()
         .map_err(|e| format!("解析错误: {}", e));
+
+    // 如果是 "abc"，result 将是 Err("解析错误: ...")
 }
-```
 
-### 场景 5：多线程
+// ============================================================================
+// 场景 5：多线程 (Multithreading)
+// ============================================================================
+// 用途：并发执行任务并共享状态。
+// 原理：thread::spawn 需要 'static + Send 的闭包。
+//       move 关键字强制闭包捕获变量的所有权，使其生命周期独立于主线程。
+//       Arc/Mutex 用于在多个线程间安全地共享可变状态。
 
-```rust
-use std::thread;
-use std::sync::{Arc, Mutex};
+fn scene_multithreading() {
+    use std::thread;
+    use std::sync::{Arc, Mutex};
 
-fn main() {
+    // Arc: 原子引用计数，允许多个线程共享所有权
+    // Mutex: 互斥锁，保证同一时间只有一个线程能修改内部数据
     let counter = Arc::new(Mutex::new(0));
     let mut handles = vec![];
 
     for i in 0..5 {
+        // 克隆 Arc 指针，让新线程也拥有 counter 的引用
         let counter = Arc::clone(&counter);
+
+        // move: 将 counter (Arc 副本) 和 i 的所有权移入闭包
+        // 这样闭包就可以独立于循环变量运行
         let handle = thread::spawn(move || {
+            // 锁住 Mutex，获取内部数据的可变引用
             let mut num = counter.lock().unwrap();
             *num += 1;
-            println!("线程 {} 完成", i);
+            println!("-> [场景5] 线程 {} 完成，当前计数: {}", i, *num);
         });
         handles.push(handle);
     }
 
+    // 等待所有线程结束
     for handle in handles {
         handle.join().unwrap();
     }
 
-    println!("最终计数: {}", *counter.lock().unwrap());
+    println!("-> [场景5] 最终计数: {}", *counter.lock().unwrap());
 }
-```
 
-### 场景 6：函数组合
+// ============================================================================
+// 场景 6：函数组合 (Function Composition)
+// ============================================================================
+// 用途：将小函数组合成大函数，构建复杂逻辑。
+// 原理：compose 函数接收两个函数 f 和 g，返回一个新的闭包。
+//       这个新闭包捕获了 f 和 g (通过 move)，并在被调用时依次执行它们。
 
-```rust
+// 返回类型 impl Fn(A) -> C 表示返回一个实现了 Fn trait 的匿名类型
 fn compose<F, G, A, B, C>(f: F, g: G) -> impl Fn(A) -> C
 where
     F: Fn(A) -> B,
     G: Fn(B) -> C,
 {
+    // move: 捕获 f 和 g 的所有权，使返回的闭包可以独立存在
     move |x| g(f(x))
 }
 
-fn main() {
+fn scene_composition() {
     let add_one = |x: i32| x + 1;
     let double = |x: i32| x * 2;
 
+    // 生成一个新函数：先加 1，再乘 2
     let add_one_then_double = compose(add_one, double);
-    println!("{}", add_one_then_double(5));  // (5 + 1) * 2 = 12
+
+    let res = add_one_then_double(5); // (5 + 1) * 2 = 12
+    println!("-> [场景6] 组合函数结果: {}", res);
 }
-```
 
----
+// ============================================================================
+// 主函数：运行所有场景
+// ============================================================================
+fn main() {
+    // 场景 1
+    let inv = Inventory { shirts: vec![] };
+    // 传入 None，触发惰性计算
+    let item = inv.giveaway(None);
+    println!("-> [场景1] 获得的衬衫颜色: {}\n", item);
 
+    // 场景 2
+    scene_iterator();
+    println!();
+
+    // 场景 3
+    let mut btn = Button::new("提交");
+    btn.set_on_click(|| println!("   表单已提交！"));
+    btn.click();
+    println!();
+
+    // 场景 4
+    scene_error_handling();
+    println!();
+
+    // 场景 5
+    scene_multithreading();
+    println!();
+
+    // 场景 6
+    scene_composition();
+// }
+// 惰性 (unwrap_or_else): 闭包是代码块，不是立即执行的值。这让它成为控制流（如“仅在需要时计算”）的完美工具。
+// 迭代器 (filter, map): 闭包提供了极简的语法来定义“对每个元素做什么”，避免了编写冗长的命名函数。
+// 多态 (Box<dyn Fn>): 当需要在结构体中存储不同类型的行为，或者在运行时决定行为时，必须使用 Trait 对象。
+// 错误处理 (filter_map, map_err): 闭包允许我们在链式调用中灵活地转换数据类型或错误信息，保持代码流畅。
+// 并发 (move): move 关键字对于多线程至关重要，它确保闭包拥有自己所需数据的所有权，避免数据竞争和悬垂引用。
+// 组合 (move 捕获): 高阶函数（接收函数返回函数的函数）依赖闭包来“记住”传入的参数（如 f 和 g），从而创建新的功能单元。
 ## 总结
 
 | 核心概念     | 要点                                                    |
@@ -507,3 +816,4 @@ fn main() {
 | 作为返回值   | `impl Fn(...)` 或 `Box<dyn Fn(...)>`                    |
 | 类型推断     | 编译器自动推断，一旦确定不可更改                        |
 | vs 函数指针  | 闭包可捕获环境、大小可变；函数指针固定大小、不可捕获    |
+```
