@@ -1,0 +1,32 @@
+[package]
+name = "my_crate_hh"
+version = "0.1.1"
+edition = "2024" # 或你使用的版本
+
+# 必须添加以下字段以消除警告并符合发布规范
+
+# 1. 描述 (Description)
+# crates.io 强制要求填写
+description = "A short description of what your crate does"
+
+# 2. 仓库地址 (Repository)
+# 建议填写你的 GitHub/GitLab 仓库地址
+repository = "https://github.com/your-username/your-repo-name"
+
+# 3. 许可证 (License)
+# 必须填写 SPDX 许可证标识符
+# 如果是 MIT 许可证：
+license = "MIT"
+# 如果是 MIT OR Apache-2.0：
+# license = "MIT OR Apache-2.0"
+# 如果是自定义许可证文件，需使用 license-file = "LICENSE"
+
+# 4. 文档链接 (Documentation) - 可选但推荐
+documentation = "https://docs.rs/my_crate_hh"
+
+# 5. 关键词 (Keywords) - 可选
+# 方便别人在 crates.io 上搜索到你的库
+keywords = ["example", "demo"]
+
+# 6. 主页 (Homepage) - 可选
+homepage = "https://your-website.com"
