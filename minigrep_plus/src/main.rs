@@ -8,7 +8,7 @@ fn main() {
 
     // 2. 调用 Config 的构建函数解析参数
     // unwrap_or_else 是一个闭包处理：如果成功则返回 Config，如果失败则执行闭包逻辑
-    let config =  Config::build(&args).unwrap_or_else(|err| {
+    let config =  Config::build(env::args()).unwrap_or_else(|err| {
         // eprintln! 将错误信息打印到“标准错误流 (stderr)”而不是“标准输出流 (stdout)”
         eprintln!("解析参数时出现问题: {}", err);
         // 停止程序并返回退出状态码 1（表示非正常退出）
