@@ -5,3 +5,13 @@ edition = "2024"
 
 [dependencies]
 log = "0.4.29"
+
+
+[profile.dev]
+
+opt-level = 1
+
+
+[profile.release]
+
+opt-level = 2

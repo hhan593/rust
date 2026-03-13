@@ -4,7 +4,6 @@ use minigrep_plus::{run,Config};
 fn main() {
     // 1. 收集命令行参数到一个字符串向量中
     // args[0] 是程序名，args[1] 是查询字符串，args[2] 是文件名
-    let args: Vec<String> = env::args().collect();
 
     // 2. 调用 Config 的构建函数解析参数
     // unwrap_or_else 是一个闭包处理：如果成功则返回 Config，如果失败则执行闭包逻辑
