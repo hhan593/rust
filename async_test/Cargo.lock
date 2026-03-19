@@ -3,14 +3,6 @@
 version = 4
 
 [[package]]
-name = "Future"
-version = "0.1.0"
-dependencies = [
- "tokio",
- "trpl",
-]
-
-[[package]]
 name = "ahash"
 version = "0.8.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -21,6 +13,13 @@ dependencies = [
  "once_cell",
  "version_check",
  "zerocopy",
+]
+
+[[package]]
+name = "async_test"
+version = "0.1.0"
+dependencies = [
+ "trpl",
 ]
 
 [[package]]
