@@ -1,81 +1,45 @@
-use trpl;
 use std::time::Duration;
-
-
+use trpl;
 
 fn main() {
-    trpl::block_on(async{
-    // let fut_1 =    async  {
-    //         for i in 1..10 {
-    //             println!("hi number {} from the spawned task!", i);
-    //             trpl::sleep(Duration::from_secs(1)).await;
-    //         }
-    //     };
-    //   let fut_2 = async {
-    //       for i in 1..5 {
-    //           println!("hi number {i} from the second task!");
-    //           trpl::sleep(Duration::from_millis(500)).await;
-    //       }
-    //   };
-    //     trpl::join(fut_1, fut_2).await;
+    // 启动异步运行时
+    trpl::run(async {
+        // 【阶段 1：构建未来任务】
+        // 这里只是定义了 3 个 async 块，并将它们收集到一个 Vec 中。
+        // 关键点：此时没有任何代码真正执行！trpl::sleep 还没有开始计时。
+        // 每个 async move { ... } 都是一个独特的类型，但因为我们要存进同一个 Vec，
+        // 编译器通常在这里会报错，除非显式转换为 Box<dyn Future>。
+        // *注意*：如果你之前的代码能编译通过，可能是因为 trpl 库做了特殊处理或者你隐式转换了类型。
+        // 如果直接这样写通常会有类型推断错误 (Vec 不能存不同类型的匿名 Future)。
+        // 假设这里能编译（例如隐式转为了统一特征对象），逻辑如下：
+        let futs: Vec<_> = [1, 2, 3]
+            .iter()
+            .map(|n| async move {
+                // 这行代码现在还没运行，只是在描述“将来要做什么”
+                trpl::sleep(Duration::from_secs(5)).await;
 
-        // ***通过消息传递在两个任务之间发送数据
-        //
-        // let (tx,mut rx)  =trpl::channel(); //trpl::channel，用于线程的多生产者、单消费者信道 API 的异步版本
-        //
-        // let val = String::from("hi number");
-        // tx.send(val).unwrap();
-        // let received = rx.recv().await.unwrap();
-        // println!("received {}", received);
+                // 返回计算结果
+                n + 1
+            })
+            .collect();
 
+        // 【阶段 2：执行未来任务】
+        // 这里是真正的“触发器”。
+        for fut in futs {
+            // 🔴 关键行为：
+            // 1. 调用 .await 时，当前的这个 future (fut) 才真正开始执行。
+            // 2. 程序在这里暂停，等待 5 秒。
+            // 3. 5 秒后，打印结果，循环继续。
+            // 4. 下一个 future 在此刻才开始它的 5 秒倒计时。
+            let n = fut.await;
 
-        // 通过异步信道发送和接收多个消息并在每个消息之间通过 `await` 休眠
-        let (tx, mut rx) = trpl::channel();
-        //
-        // let vals = vec![
-        //     String::from("hi"),
-        //     String::from("from"),
-        //     String::from("the"),
-        //     String::from("future"),
-        // ];
-        //
-        // for val in vals {
-        //     tx.send(val).unwrap();
-        //     trpl::sleep(Duration::from_millis(500)).await;
-        // }
-        //
-        // while let Some(value) = rx.recv().await {
-        //     println!("received '{value}'");
-        // }
-//
+            println!("收到结果: {n}");
+        }
 
-        //
-        let tx_fut = async move {
-            let vals = vec![
-                String::from("hi"),
-                String::from("from"),
-                String::from("the"),
-                String::from("future"),
-            ];
-
-            for val in vals {
-                tx.send(val).unwrap();
-                trpl::sleep(Duration::from_millis(1000)).await;
-            }
-        };
-
-        let rx_fut = async {
-            while let Some(value) = rx.recv().await {
-                println!("received '{value}'");
-            }
-        };
-
-        trpl::join(tx_fut, rx_fut).await;
-
+        // 流程总结：
+        // 0-5秒: 任务 1 运行 (任务 2,3 在等待)
+        // 5-10秒: 任务 2 运行 (任务 3 在等待)
+        // 10-15秒: 任务 3 运行
+        // 总耗时 ≈ 15 秒
     });
-
-
-
-
-
 }
