@@ -1,0 +1,26 @@
+{
+	"folders": [
+		{
+			"path": "ch1_ownership_introduce"
+		},
+		{
+			"path": "ch2_string_str"
+		},
+		{
+			"path": "ch3_enum"
+		},
+		{
+			"path": "ch4_struct"
+		},
+		{
+			"path": "ch5_ownership_struct"
+		},
+		{
+			"path": "ch6_box"
+		},
+		{
+			"path": "ch6_copy_move"
+		}
+	],
+	"settings": {}
+}

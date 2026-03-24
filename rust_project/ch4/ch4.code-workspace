@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "ch1_if_match"
+		},
+		{
+			"path": "ch2_loop_iter"
+		},
+		{
+			"path": "ch3_fn"
+		},
+		{
+			"path": "ch4_fn_move_borrow_mut"
+		},
+		{
+			"path": "ch5_fn_back"
+		},
+		{
+			"path": "ch6_higher_func"
+		}
+	],
+	"settings": {}
+}

@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "ch1_trait"
+		},
+		{
+			"path": "ch2_trait_box"
+		},
+		{
+			"path": "ch3_trait_generic"
+		},
+		{
+			"path": "ch4_add"
+		},
+		{
+			"path": "ch5_trait"
+		},
+		{
+			"path": "ch6_trait_common"
+		}
+	],
+	"settings": {}
+}
