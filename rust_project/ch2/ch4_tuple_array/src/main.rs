@@ -6,10 +6,10 @@ fn main() {
     println!("{}", tup.2);
 
     let mut tup2 = (0, "we");
-    println!("tup.2 is {}",tup.2);
+    println!("tup.2 is {}", tup.2);
     tup2.0 = 89;
     println!("{}", tup2.0);
-    // 空元祖
+    // 空元组
 
     let tup3 = ();
 
