@@ -27,4 +27,24 @@ fn main() {
     for item in arr {
         print!("{}", item);
     }
+
+    //所有权
+
+    let arr_item = [1, 2, 3, 4, 5]; //普通的栈上数组（[T; N]）通常实现了 Copy trait。因此，arr_item被复制到arr_item2，而不是移动。这意味着arr_item和arr_item2是两个独立的变量，可以同时使用。
+    let arr_item2 = arr_item; //因为实现了Copy trait，所以arr_item2和arr_item是两个变量，两个变量可以同时使用
+    println!("arr_item22222222222222222: {:?}", arr_item2);
+    println!("arr_item33333333333333333: {:?}", arr_item);
+
+    let arr_item3 = vec![1, 2, 3, 4, 5];
+    let arr_item4 = arr_item3; //因为Vec<T>没有实现Copy trait，所以arr_item3被移动到arr_item4，arr_item3不再有效，不能再使用，否则会报错 borrow of moved value: `arr_item3` value borrowed here after move
+                               // println!("arr_item3: {:?}", arr_item3);
+    println!("arr_item4: {:?}", arr_item4);
+
+    //move语义：当一个值被赋值给另一个变量时，原来的变量不再有效，新的变量成为该值的所有者。这种行为称为“移动”（move）。
+    //当一个值被移动时，原来的变量不再有效，不能再使用，否则会报错 borrow of moved value: `arr_item3` value borrowed here after move
+
+    let str = String::from("hello");
+    let str2 = str; //str扥所有权被移动到str2，str不再有效
+                    // println!("str: {}", str); //error borrow of moved value: `str`
+    println!("str2: {}", str2);
 }
