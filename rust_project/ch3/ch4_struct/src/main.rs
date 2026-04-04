@@ -21,9 +21,9 @@ impl Drink {
         println!("buy it");
     }
     // 关联函数
-    fn new(price: f64) -> Self {
+    fn new(price: f64,flavor: Flavor) -> Self {
         Drink {
-            flavor: Flavor::Fruity,
+            flavor,
             price,
         }
     }
@@ -45,6 +45,6 @@ fn main() {
     };
     println!("{}", sweet.price);
     print_drink(sweet); // sweet
-    let sweet = Drink::new(12.0);
+    let sweet = Drink::new(12.0,Flavor::Spicy);
     sweet.buy();
 }
