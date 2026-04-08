@@ -1,106 +1,114 @@
+// --- 结构体定义 ---
+
 // 定义结构体 Person
-// 使用泛型生命周期 'a，表示 name 字段引用的字符串切片，其生命周期至少和 Person 实例一样长
+// 使用泛型生命周期 'a
+// 含义：name 字段引用的字符串切片，其生命周期必须至少和 Person 实例一样长
+// 这样可以防止出现“悬垂引用”（即 Person 还在，但 name 指向的字符串已经被释放了）
 struct Person<'a> {
     name: &'a str,      // name 是一个字符串切片引用 (&str)，不拥有数据所有权
     age: i32,           // age 是一个 32 位整数
     occupation: String, // occupation 是一个 String 类型，拥有堆上数据的所有权
 }
 
-fn main() {
-    // --- 字符串操作部分 ---
+// --- 主函数 ---
 
-    // 1. 创建 String 类型
+fn main() {
+    // =======================
+    // 1. 字符串创建与所有权
+    // =======================
+
     // 使用 String::from 将字符串字面量（&str）转换为堆上分配的 String
-    // 这样创建的变量拥有所有权，可以被修改（除非声明为不可变）
+    // 此时 name 变量拥有这段字符串的所有权
     let name = String::from("Value C++");
 
-    // 演示创建 String 的三种常见方式：
-    // - String::from: 显式转换
-    // - to_string(): 通用 trait 方法
-    // - to_owned(): 通用 trait 方法（通常用于从借用中获取所有权）
-    let course = "Rust".to_string(); // 方式一
-    let course1 = "Rust".to_owned(); // 方式二
+    // 演示创建 String 的另外两种常见方式：
+    let course = "Rust".to_string(); // 方式一：to_string()
+    let course1 = "Rust".to_owned(); // 方式二：to_owned() (通常用于从借用中获取所有权)
 
-    // 2. 字符串操作 (不可变性演示)
-    // replace 方法并不会修改原来的 `name` 变量
-    // 而是根据规则创建了一个**新的**字符串值，并将其绑定到 `new_name` 上
-    // 原来的 `name` 依然保持不变（Rust 的默认不可变性原则）
+    // =======================
+    // 2. 字符串操作 (不可变性)
+    // =======================
+
+    // replace 方法不会修改原来的 `name` 变量
+    // Rust 的 String 默认是不可变的。replace 会分配新内存，创建一个新的 String
     let new_name = name.replace("C++", "CPP");
 
-    // 打印结果
-    // new_name 是修改后的新值
     println!("{}", new_name); // 输出: Value CPP
-
-    // course 和 course1 是我们创建的两个 Rust 字符串
     println!("{}", course); // 输出: Rust
     println!("{}", course1); // 输出: Rust
 
-    // 关键点：这里的 name 依然是 "Value C++"
-    // 证明了上面的 replace 操作没有“消耗”或改变原变量
+    // 验证原变量未被修改
+    // 这证明了 Rust 的变量默认是不可变的，操作通常返回新值
     println!("{}", name); // 输出: Value C++
 
-    // 3. ASCII 十六进制字面量
-    // \x 是 Rust 的转义字符，后面跟两位十六进制数代表一个 ASCII 字符
-    // \x52 = 'R', \x75 = 'u', \x73 = 's', \x74 = 't'
+    // =======================
+    // 3. 底层字节与转义
+    // =======================
+
+    // \x 是 Rust 的 ASCII 转义字符，后面跟两位十六进制数
+    // \x52='R', \x75='u', \x73='s', \x74='t'
     let rust = "\x52\x75\x73\x74";
 
-    // 打印字符串本身
     println!("{rust}"); // 输出: Rust
 
-    // 4. 底层字节与字符分析
-    // bytes(): 返回一个迭代器，将字符串视为字节序列 (u8)
-    // {:?} 是 Debug 格式化，打印迭代器的调试信息（如 "Bytes(...)")
-    println!("{:?}", rust.bytes());
+    // =======================
+    // 4. 迭代器 (Bytes vs Chars)
+    // =======================
 
-    // chars(): 返回一个迭代器，将字符串视为 Unicode 字符序列
-    // {:?} 打印迭代器的调试信息
-    println!("{:?}", rust.chars());
+    // bytes(): 将字符串视为字节序列 (u8)。
+    // {:?} 是 Debug 格式化，这里打印的是迭代器对象本身的调试信息
+    println!("{:?}", rust.bytes()); // 输出: Bytes(['R', 'u', 's', 't'])
 
-    // 5. 迭代器消费
-    // 使用 for 循环遍历 chars() 迭代器
-    // 将 "Rust" 拆分成单个字符并逐行打印
+    // chars(): 将字符串视为 Unicode 字符序列。
+    println!("{:?}", rust.chars()); // 输出: Chars(['R', 'u', 's', 't'])
+
+    // 消费迭代器：遍历字符
     for c in rust.chars() {
         println!("{}", c);
-        // 输出:
-        // R
-        // u
-        // s
-        // t
+        // 逐行输出: R, u, s, t
     }
 
-    // --- 结构体部分 ---
+    // =======================
+    // 5. 结构体实例化
+    // =======================
 
-    // 6. 实例化结构体 Person
-    // name: "John" 是字符串字面量 (&str)，其生命周期是 'static
-    // age: 30 是整数
-    // occupation: String::from(...) 创建了一个拥有所有权的 String
     let person = Person {
-        name: "John",
+        name: "John", // 字符串字面量类型是 &'static str，满足生命周期 'a 的要求
         age: 30,
-        occupation: String::from("Software Engineer"),
+        occupation: String::from("Software Engineer"), // 拥有所有权的 String
     };
 
-    // 7. 打印结构体字段
-    // 直接访问结构体的字段进行打印
-    // 注意：这里没有使用 {:?} (Debug trait)，而是手动格式化输出
+    // 手动格式化输出结构体字段
     println!("{} {} {}", person.name, person.age, person.occupation);
     // 输出: John 30 Software Engineer
+
+    // =======================
+    // 6. 函数调用与类型转换
+    // =======================
+
     let data = "Hello, Rust!";
-    let data2 = data.to_string();
+    let data2 = data.to_string(); // data2 是 String 类型
 
-    print_person(&data2); // 传递 &String，函数接受 &str
+    // 传递 &String 给接受 &str 的函数
+    // 这是一个“解引用强制多态” (Deref Coercion) 的例子
+    // Rust 会自动把 &String 转换为 &str
+    print_person(&data2);
 
-    print_person_string(&data2); //但是这个函数只能接受&String
+    // 传递 &String 给接受 &String 的函数
+    // 必须显式借用
+    print_person_string(&data2);
 }
-//函数
 
-//这个函数可以传递&String 和 &str
+// --- 辅助函数 ---
+
+// 这个函数接受 &str
+// 灵活性高：既可以接收字符串字面量，也可以接收 &String (通过自动转换)
 fn print_person(data: &str) {
-    // println!("{} {} {}", person.name, person.age, person.occupation);
     println!("data is :{}", data);
 }
 
-//这个函数可以传递&String
+// 这个函数只接受 &String
+// 灵活性低：只能接收 String 的引用
 fn print_person_string(data: &String) {
     println!("{}", data);
 }
