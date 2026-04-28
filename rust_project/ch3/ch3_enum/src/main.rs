@@ -14,7 +14,11 @@ enum Color {
     Blue,
     Black,
 }
+
+/// 为 Color 枚举实现方法，提供打印颜色的功能
 impl Color {
+    /// 打印当前颜色值到控制台
+    /// 该方法会根据 Color 的不同变体输出对应的颜色名称
     fn print_color(&self) {
         match self {
             Color::Red => println!("Red"),
@@ -30,7 +34,11 @@ enum BuildingLocation {
     Name(String), // 包含一个 String 类型的建筑名称
     Unknown,      // 不包含任何数据，表示未知位置
 }
+
+/// 为 BuildingLocation 枚举实现方法，提供打印位置的功能
 impl BuildingLocation {
+    /// 根据不同变体打印建筑位置信息
+    /// 对于 Number 变体，输出编号；对于 Name 变体，输出名称；对于 Unknown 变体，输出"unknown"
     fn print_location(&self) {
         match self {
             BuildingLocation::Number(c) => println!("building number {}", c),
@@ -39,6 +47,9 @@ impl BuildingLocation {
         }
     }
 }
+
+/// 主函数，演示各种枚举类型的使用方式
+/// 包括创建枚举实例、调用方法以及使用 match 进行模式匹配
 fn main() {
     println!("enum 枚举!!!!");
 
@@ -76,15 +87,28 @@ fn main() {
 // match 表达式允许我们根据枚举的不同变体执行不同的代码逻辑。我们可以使用 match 来匹配枚举的变体，并提取其中的数据。
 // 必须覆盖所有可能的变体，否则编译器会报错。我们可以使用 _ 模式来匹配所有未被显式处理的变体。
 // 可以用_、..=、|等模式来匹配多个变体或忽略某些值。
+
+/// Option<T> 枚举表示一个可选值，要么是 Some(T) 要么是 None
+/// 这是 Rust 中处理空值问题的核心机制，避免了空指针异常
 pub enum Option<T> {
     Some(T), // 包含一个 T 类型的值
     None,    // 不包含任何值
 }
 
+/// Result<T, E> 枚举用于处理可能会失败的操作
+/// 表示操作成功时返回 T 类型的值，或在出错时返回 E 类型的错误
 pub enum Result<T, E> {
     Ok(T),  // 包含一个 T 类型的成功值
     Err(E), // 包含一个 E 类型的错误值
 }
+
+/// 根据 Color 枚举的不同变体打印对应的颜色名称
+/// 
+/// # 参数
+/// * `color` - Color 枚举的一个实例，代表某种颜色
+/// 
+/// # 返回值
+/// 该函数不返回值，仅向标准输出打印颜色名称
 fn print_color(color: Color) {
     match color {
         Color::Red => println!("Red"),
