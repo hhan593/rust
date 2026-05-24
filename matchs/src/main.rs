@@ -1,3 +1,6 @@
+
+mod main2;
+
 fn main() {
     //因为 u8 和 Option<u8> 是完全不同的两种东西
     // let x: u8 = Some(5); // 这样写是错误的，因为Option<T>是一个枚举类型，不能直接赋值给它， ^^^^^^^ expected `u8`, found `Option<{integer}>`

@@ -36,6 +36,7 @@
 //     // 并且在 drop(add) 后，add 已经无效了。
 // }
 
+
 // FnOnce — 所有权转移 ：闭包捕获变量的所有权，只能调用一次。
 fn main() {
     let s = String::from("hello");

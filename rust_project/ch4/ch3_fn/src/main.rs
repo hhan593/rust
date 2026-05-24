@@ -1,3 +1,5 @@
+
+
 // 定义一个加法函数，接收两个 i32 类型的参数，返回一个 i32 类型的值
 fn add(x: i32, y: i32) -> i32 {
     return x + y; // 使用 return 关键字显式返回 x 和 y 的和
@@ -33,7 +35,7 @@ fn modify_i32(x: &mut i32) {
 struct Point {
     x: i32,
     y: i32,
-}<websource>source_group_web_1</websource>
+}
 
 fn main() {
     let a = 1; // 声明不可变变量 a

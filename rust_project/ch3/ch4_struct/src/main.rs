@@ -1,3 +1,5 @@
+
+
 // 定义一个枚举类型，表示饮品的口味
 enum Flavor {
     Spicy,   // 辣味
@@ -22,7 +24,7 @@ impl Drink {
         // 如果价格超过了最大限制
         if self.price > Drink::MAX_PRICE {
             println!(" I am poor"); // 输出 "I am poor"
-            ret flavor, price
+            
 
     // 关联函数：构造函数，用于创建新的 Drink 实例
     // 参数：price (价格), flavor (口味)
