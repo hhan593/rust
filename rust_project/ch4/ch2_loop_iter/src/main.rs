@@ -32,11 +32,8 @@ fn main() {
     }
 
     // --- for 循环 (遍历数组) ---
-    let arr = ; // 定义一个包含5个整数的数组
+    let arr =5 ; // 定义一个包含5个整数的数组
     // 使用 for 循环直接遍历数组中的每一个元素，Rust 会自动处理索引，非常安全（不会越界）
-    for i in arr {
-        println!(" for 循环 i: {}", i); // 依次打印数组里的 1, 2, 3, 4, 5
-    }<websource>source_group_web_1</websource>
 
     // 再次演示范围遍历，0..10 会打印 0 到 9
     for i in 0..10 {
@@ -45,7 +42,7 @@ fn main() {
 
     // --- break 的实战演示 ---
     // 定义一个包含 1 到 10 的数组
-    let arr = ;
+    let arr =[5 ;5] ;
     
     for element in arr {
         if element == 5 {
@@ -53,8 +50,7 @@ fn main() {
         }
         // 因为遇到 5 就 break 了，所以这行打印代码只会执行到 4
         println!("break for 循环 element: {}", element); // 输出：1, 2, 3, 4
-    }<websource>source_group_web_2</websource>
-
+    }
     // --- continue 的实战演示 ---
     for element in arr {
         if element == 5 {
@@ -78,7 +74,7 @@ fn main() {
     // 知识点：如果没有 'outer，break 只会跳出内层 loop，外层 loop 会继续执行，变成死循环。
 
     // --- 循环的常规写法（命令式编程） ---
-    let numbers = ; // 定义原始数组
+    let numbers = [1,2,3]; // 定义原始数组
     let mut for_numbers = Vec::new(); // 创建一个空的、可变的向量（动态数组），用来存放结果
     
     // 遍历 numbers 数组<websource>source_group_web_3</websource>。&number 表示我们借用数组里的值（因为数组是 Copy 的，这里也可以直接写 number）
@@ -90,7 +86,7 @@ fn main() {
 
     // --- 迭代的写法（函数式编程 / 迭代器） ---
     // 这是 Rust 中更地道、更高效的“零成本抽象”写法
-    let numbers = .to_vec(); // 将数组转为向量 (Vec)
+    let numbers = numbers.to_vec(); // 将数组转为向量 (Vec)
     
     // 1. .iter() 获取这个向量的迭代器
     // 2. .map() 是一个高阶函数，它对迭代器里的每个元素执行闭包操作（|&number| number * number 就是计算平方）
@@ -99,7 +95,7 @@ fn main() {
     // 3. .collect::<Vec<_>>() 将迭代器处理完的结果，收集并组装成一个新的向量
     println!("iter : {:?}", iter_numbers.collect::<Vec<_>>()); // 打印结果: 
 }
-```<websource>source_group_web_5</websource>
+
 
 //  重点知识总结
 
