@@ -6,8 +6,14 @@
 **/.vscode/
 
 # OS
+.DS_Store
+**/.DS_Store
 Thumbs.db
 Desktop.ini
+
+# Temporary and backup files
+**/*.tmp
+**/*.bak
 
 # Large files
 烽火戏诸侯-剑来.txt
