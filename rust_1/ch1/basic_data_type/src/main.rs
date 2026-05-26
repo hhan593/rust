@@ -10,12 +10,12 @@ fn main() {
 
     // 💡 [进阶知识] 字面量后缀与视觉分隔符
     // 可以使用下划线 `_` 提高可读性，并在末尾直接加上类型后缀以明确类型。
-    let salary = 1_000_000_u32;
-    let mask = 0xff_u8;
+    let _salary = 1_000_000_u32;
+    let _mask = 0xff_u8;
 
     // 💡 [进阶知识] 单字节字符字面量 (Byte literals)
     // 使用 b 前缀，类型会被严格推断为 u8，专门用于 ASCII 字节，常用于底层网络/文件处理。
-    let byte_val = b'A'; // 打印的值为 65
+    let _byte_val = b'A'; // 打印的值为 65
 
     println!("{a1}, {a2}, {a3}, {a4}");
 
@@ -55,7 +55,7 @@ fn main() {
     // 核心知识点 4：布尔值与变量遮蔽 (Shadowing)
     // ==========================================
     let is_ok = true;
-    let not_ok = false;
+    let _not_ok = false;
 
     // 💡 [进阶知识] 变量遮蔽 (Shadowing) vs 可变变量 (mut)
     // 为什么这里又用 `let` 声明了一次 not_ok 不会报错？
