@@ -13,7 +13,7 @@ fn main() {
 
     // 创建方式 2：批量初始化 [默认值; 长度]
     // 这相当于写了 let arr_batch = [5, 5, 5];
-    let arr_batch = [5; 3];
+    let _arr_batch = [5; 3];
 
     // 获取元素（索引从 0 开始）与获取长度
     let first = arr1[0];
