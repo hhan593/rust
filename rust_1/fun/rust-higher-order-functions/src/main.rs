@@ -6,18 +6,34 @@
 // 5. 闭包 (Closures)：类似匿名函数（如 `|x| x + 1`），编译器会自动为其实现 `Fn` 特征，因此它也可以和普通函数一样作为参数传递。
 // 6. 隐式返回 (Implicit Return)：函数体内最后一行没有分号的表达式，会被自动当作函数的返回值。
 
-fn apply<F>(f: F, value: i32) -> i32 // 知识点：泛型函数定义。解释：声明带有泛型 `<F>` 的 apply 函数，接收一个类型为 F 的参数 f，以及一个 i32 类型的 value，并返回 i32。
-where // 知识点：where 子句。解释：使用 where 语法将特征约束（Trait Bounds）分离出来，这比直接写在尖括号里更易读。
+fn apply<F>(f: F, value: i32) -> i32
+// 知识点：泛型函数定义。解释：声明带有泛型 `<F>` 的 apply 函数，接收一个类型为 F 的参数 f，以及一个 i32 类型的 value，并返回 i32。
+where
+    // 知识点：where 子句。解释：使用 where 语法将特征约束（Trait Bounds）分离出来，这比直接写在尖括号里更易读。
     F: Fn(i32) -> i32, // 知识点：Trait Bounds 与 Fn Trait。解释：约束泛型 F 必须实现 Fn 特征，即 F 必须是一个接受 i32 作为参数并返回 i32 的可调用类型（函数或闭包）。
-{ // 知识点：函数体开始。
+{
+    // 知识点：函数体开始。
     f(value) // 知识点：函数调用与隐式返回。解释：调用传入的 f，并将 value 作为参数传入。计算结果没有分号，直接作为 apply 的返回值。
 } // 知识点：作用域结束。解释：apply 函数定义结束。
 
-fn double(x: i32) -> i32 { // 知识点：普通函数定义。解释：定义一个名为 double 的普通函数，符合接受 i32 并返回 i32 的签名。
+fn double(x: i32) -> i32 {
+    // 知识点：普通函数定义。解释：定义一个名为 double 的普通函数，符合接受 i32 并返回 i32 的签名。
     x * 2 // 知识点：算术运算与隐式返回。解释：将 x 乘以 2 的结果直接返回（无分号）。
 } // 知识点：作用域结束。解释：double 函数定义结束。
 
-fn main() { // 知识点：程序入口。解释：Rust 程序的主函数。
+fn main() {
+    // 知识点：程序入口。解释：Rust 程序的主函数。
     println!("{}", apply(double, 10)); // 知识点：泛型多态、传递普通函数。解释：调用 apply，将普通函数 double 当作泛型 F 传入，计算 double(10)。最终打印出 20。
     println!("{}", apply(|x| x + 1, 10)); // 知识点：泛型多态、传递闭包。解释：调用 apply，这次将内联的闭包 `|x| x + 1` 当作泛型 F 传入，计算闭包(10)。最终打印出 11。
+
+    let nums = vec![1, 2, 3, 4, 5, 6, 7, 8, 9];
+    let square = transform_vec(nums, |x| x * x);
+    println!("{:?}", square)
 } // 知识点：作用域结束。解释：main 函数结束。
+
+fn transform_vec<F>(items: Vec<i32>, f: F) -> Vec<i32>
+where
+    F: Fn(i32) -> i32,
+{
+    items.into_iter().map(f).collect()
+}
