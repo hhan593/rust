@@ -56,7 +56,7 @@ fn main() {
     /// # 示例
     ///
     pub fn notify_dynamic(item: &dyn Summary) {
-        println!("Breaking news! {}", item.     ());
+        println!("Breaking news! {}", item.summarize());
     }
 
     let articles: Vec<Box<dyn Summary>> = vec![
