@@ -33,3 +33,17 @@ fn road(vehicle: &dyn Driver) -> String { // 知识点：特征对象传参、�
 fn main() { // 知识点：程序入口。解释：Rust 程序的主线程从这里开始。
     road(&Car); // 知识点：函数调用、取引用。解释：将 Car 实例的引用传入 road 函数。产生的 String 返回值因为没有被接收，随语句结束被自动丢弃。
 } // 知识点：作用域结束。解释：main 函数执行完毕。
+
+
+//继承思想
+trait Queue {
+    fn len(&self) -> usize;
+    fn is_empty(&self) -> bool;
+    fn push_back(&mut self, x: i32);
+    fn pop_front(&mut self) -> Option<i32>;
+}
+
+trait Deque: Queue {
+    fn push_front(&mut self, x: i32);
+    fn pop_back(&mut self) -> Option<i32>;
+}
