@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Rust 学习仓库 · 知识图谱</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #161b22;
+    --panel-2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    overflow: hidden;
+  }
+  #app { display: flex; height: 100vh; }
+  #stage { position: relative; flex: 1 1 auto; }
+  canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+  canvas.grabbing { cursor: grabbing; }
+  /* 侧边栏 */
+  #side {
+    width: 320px; flex: 0 0 320px; background: var(--panel);
+    border-left: 1px solid var(--border); padding: 16px; overflow-y: auto;
+  }
+  #side h1 { font-size: 16px; margin: 0 0 4px; }
+  #side .sub { color: var(--muted); font-size: 12px; margin-bottom: 14px; line-height: 1.5; }
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .stat { background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+  .stat .n { font-size: 20px; font-weight: 700; color: var(--accent); }
+  .stat .l { font-size: 11px; color: var(--muted); }
+  .controls { margin-bottom: 16px; }
+  .controls label { display: flex; align-items: center; gap: 8px; font-size: 13px; margin: 6px 0; cursor: pointer; }
+  .controls input[type=text] {
+    width: 100%; background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--text); border-radius: 6px; padding: 7px 9px; font-size: 13px; margin-top: 6px;
+  }
+  .controls button {
+    margin-top: 8px; width: 100%; background: var(--accent); color: #0f1419;
+    border: none; border-radius: 6px; padding: 8px; font-weight: 600; cursor: pointer; font-size: 13px;
+  }
+  .legend h2 { font-size: 13px; color: var(--muted); margin: 14px 0 8px; text-transform: uppercase; letter-spacing: .5px; }
+  .legend .item { display: flex; align-items: center; gap: 8px; padding: 5px 6px; border-radius: 6px; cursor: pointer; font-size: 13px; }
+  .legend .item:hover { background: var(--panel-2); }
+  .legend .dot { width: 12px; height: 12px; border-radius: 50%; flex: 0 0 12px; }
+  .legend .count { margin-left: auto; color: var(--muted); font-size: 12px; }
+  /* 提示框 */
+  #tip {
+    position: absolute; pointer-events: none; background: rgba(22,27,34,.96);
+    border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+    font-size: 12px; max-width: 260px; display: none; z-index: 10; line-height: 1.5;
+  }
+  #tip .t { font-weight: 700; font-size: 13px; margin-bottom: 3px; }
+  #tip .d { color: var(--muted); }
+  /* 详情面板 */
+  #detail { margin-top: 14px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 13px; display: none; }
+  #detail .t { font-weight: 700; margin-bottom: 6px; }
+  #detail ul { margin: 6px 0 0; padding-left: 18px; }
+  #detail li { margin: 2px 0; color: var(--text); }
+  #detail li .code { color: var(--accent); }
+  .hint { color: var(--muted); font-size: 11px; margin-top: 10px; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div id="tip"></div>
+  </div>
+  <div id="side">
+    <h1>Rust 学习仓库 · 知识图谱</h1>
+    <div class="sub">基于真实目录结构、README 分类与 docs/ 手册自动构建。边表示「归属主题」与「知识依赖」。可拖拽、滚轮缩放、点击主题高亮。</div>
+    <div class="stat-grid">
+      <div class="stat"><div class="n" id="s-proj">0</div><div class="l">练习 crate</div></div>
+      <div class="stat"><div class="n" id="s-doc">0</div><div class="l">学习文档</div></div>
+      <div class="stat"><div class="n" id="s-cat">0</div><div class="l">主题分类</div></div>
+      <div class="stat"><div class="n" id="s-rs">0</div><div class="l">.rs 源文件</div></div>
+    </div>
+    <div class="controls">
+      <label><input type="checkbox" id="tg-docs" checked /> 显示「文档」节点</label>
+      <label><input type="checkbox" id="tg-deps" checked /> 显示「知识依赖」边</label>
+      <input type="text" id="search" placeholder="搜索节点（如 ownership / Future）…" />
+      <button id="reset">重置视图</button>
+    </div>
+    <div class="legend">
+      <h2>主题分类（点击高亮）</h2>
+      <div id="legend-items"></div>
+      <div id="detail"></div>
+      <div class="hint">提示：拖拽节点可固定位置；拖拽空白处平移；滚轮缩放。依赖边为淡色弧线，指向「被依赖的知识主题」。</div>
+    </div>
+  </div>
+</div>
+<script>
+// ============ 数据：分类 / 练习 crate / 文档 / 依赖 ============
+const GROUPS = [
+  { id:'g_basic',   name:'入门与基础语法',   color:'#4e79a7' },
+  { id:'g_owner',   name:'所有权与类型',     color:'#f28e2b' },
+  { id:'g_coll',    name:'集合·迭代器·闭包', color:'#e15759' },
+  { id:'g_mod',     name:'模块·测试·Book',   color:'#76b7b2' },
+  { id:'g_err',     name:'错误处理',         color:'#b07aa1' },
+  { id:'g_ptr',     name:'智能指针·内存',    color:'#59a14f' },
+  { id:'g_conc',    name:'并发',             color:'#edc948' },
+  { id:'g_async',   name:'异步·高级特性',   color:'#af7aa1' },
+  { id:'g_oop',     name:'面向对象·模式',    color:'#ff9da7' },
+  { id:'g_chap',    name:'章节系统练习',     color:'#9c755f' },
+];
+
+// 练习 crate（group, 名称, 代码量.rs, 说明）
+const PROJECTS = [
+  ['g_basic','hello_world',1,'Hello World 入门'],
+  ['g_basic','guess',1,'猜数字游戏'],
+  ['g_basic','day',1,'基础练习'],
+  ['g_basic','functions',2,'函数与控制流'],
+  ['g_basic','xunhuan',2,'循环练习'],
+  ['g_basic','games',1,'游戏相关练习'],
+  ['g_owner','ownership',4,'所有权与借用'],
+  ['g_owner','slice',2,'切片练习'],
+  ['g_owner','structs',4,'结构体语法'],
+  ['g_owner','enums',2,'枚举与 Option'],
+  ['g_owner','matchs',3,'模式匹配'],
+  ['g_owner','strings',1,'String 与字符串'],
+  ['g_owner','lifetimes',2,'生命周期标注'],
+  ['g_owner','trait_generics_lifetime',3,'泛型·Trait·生命周期综合'],
+  ['g_coll','Vector',1,'Vec 集合'],
+  ['g_coll','hash',1,'HashMap 与哈希集合'],
+  ['g_coll','iterator',2,'迭代器与适配器'],
+  ['g_coll','closures',2,'闭包练习'],
+  ['g_mod','adder',2,'测试示例 crate'],
+  ['g_mod','aggregator',1,'Trait 综合示例库'],
+  ['g_mod','my_crate',3,'库 crate 发布练习'],
+  ['g_mod','restaurant',2,'模块系统与可见性'],
+  ['g_mod','pages',3,'模块文件拆分'],
+  ['g_mod','minigrep',2,'Rust Book minigrep'],
+  ['g_mod','minigrep_plus',2,'minigrep 增强版'],
+  ['g_mod','workspaces',3,'Cargo workspace 示例'],
+  ['g_err','error',2,'Result/Option 与 ? 操作符'],
+  ['g_ptr','smartPointer',2,'Box/Rc/RefCell 智能指针'],
+  ['g_ptr','deref',1,'Deref / DerefMut'],
+  ['g_ptr','memory_leak',2,'Rc+RefCell 与内存泄漏'],
+  ['g_ptr','Cell',1,'Cell / RefCell 内部可变性'],
+  ['g_ptr','Arc',1,'Arc 多线程共享'],
+  ['g_conc','share_state',1,'Arc+Mutex 共享状态'],
+  ['g_conc','channel',1,'通道与消息传递'],
+  ['g_conc','Threads',1,'线程 spawn/join'],
+  ['g_async','Future',16,'Future / Poll / Waker'],
+  ['g_async','Stream',16,'Stream 流式异步'],
+  ['g_async','Pin',1,'Pin / Unpin 固定'],
+  ['g_async','async_test',17,'async/await 实践'],
+  ['g_async','async-test',13,'另一套异步练习'],
+  ['g_async','yibutrait',1,'async Trait 风格'],
+  ['g_async','superpower',1,'高级 Trait / unsafe'],
+  ['g_oop','gui',2,'GUI / trait object'],
+  ['g_oop','object',1,'面向对象与 trait object'],
+  ['g_oop','Stete-patten',2,'状态模式（State Pattern）'],
+  ['g_chap','rust_project',48,'按章节组织的系统化练习'],
+  ['g_chap','rust_1',32,'Rust 综合练习集'],
+];
+
+// 文档（文档名 -> 关联分类）
+const DOCS = [
+  ['docs/Rust学习路线图与计划书.md','g_chap'],
+  ['docs/Rust快速参考手册.md','g_chap'],
+  ['docs/借用与引用.md','g_owner'],
+  ['docs/结构体语法.md','g_owner'],
+  ['docs/枚举与模式匹配.md','g_owner'],
+  ['docs/Rust泛型Trait与生命周期知识手册.md','g_owner'],
+  ['docs/Rust_Trait知识手册.md','g_owner'],
+  ['docs/Rust集合类型与迭代器手册.md','g_coll'],
+  ['docs/Rust迭代器知识手册.md','g_coll'],
+  ['docs/Rust闭包知识手册.md','g_coll'],
+  ['docs/Rust模块系统与包管理手册.md','g_mod'],
+  ['docs/Rust测试与文档手册.md','g_mod'],
+  ['docs/Rust错误处理知识手册.md','g_err'],
+  ['docs/Rust智能指针知识手册.md','g_ptr'],
+  ['docs/Rust_Pin与Unpin知识手册.md','g_async'],
+  ['docs/Rust_String知识手册.md','g_owner'],
+];
+
+// 知识依赖（被依赖方在前，依赖方在后，方向由依赖方指向被依赖方）
+const DEPS = [
+  ['smartPointer','deref'],['smartPointer','Arc'],['smartPointer','Cell'],
+  ['Arc','share_state'],['smartPointer','memory_leak'],
+  ['trait_generics_lifetime','superpower'],
+  ['trait_generics_lifetime','gui'],['trait_generics_lifetime','object'],
+  ['object','Stete-patten'],
+  ['Future','async_test'],['Pin','async_test'],['Stream','async_test'],
+  ['Future','async-test'],['Pin','async-test'],
+];
+
+// ============ 构建节点 / 边 ============
+const nodes = [];
+const links = [];
+const byId = {};
+
+GROUPS.forEach(g => {
+  const n = { id:g.id, label:g.name, group:g.id, type:'group', color:g.color, r:26, code:0, desc:'主题分类' };
+  nodes.push(n); byId[g.id]=n;
+});
+PROJECTS.forEach(([g,name,code,desc])=>{
+  const n = { id:'p_'+name, label:name, group:g, type:'proj', color:GROUPS.find(x=>x.id===g).color, r:6+Math.min(code,18)*0.7, code, desc };
+  nodes.push(n); byId[n.id]=n;
+  links.push({ s:g, t:n.id, kind:'belong' });
+});
+DOCS.forEach(([name,g])=>{
+  const n = { id:'d_'+name, label:name.replace('docs/',''), group:g, type:'doc', color:'#9da7b3', r:5, code:0, desc:'学习文档（'+GROUPS.find(x=>x.id===g).name+'）' };
+  nodes.push(n); byId[n.id]=n;
+  links.push({ s:g, t:n.id, kind:'doc' });
+});
+DEPS.forEach(([dep,from])=>{
+  links.push({ s:'p_'+from, t:'p_'+dep, kind:'dep' });
+});
+
+// 统计
+document.getElementById('s-proj').textContent = PROJECTS.length;
+document.getElementById('s-doc').textContent = DOCS.length;
+document.getElementById('s-cat').textContent = GROUPS.length;
+document.getElementById('s-rs').textContent = PROJECTS.reduce((a,p)=>a+p[2],0);
+
+// ============ 画布与物理模拟 ============
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const tip = document.getElementById('tip');
+const detail = document.getElementById('detail');
+const stage = document.getElementById('stage');
+
+let W=0,H=0,DPR=1;
+function resize(){
+  DPR = window.devicePixelRatio||1;
+  const rect = stage.getBoundingClientRect();
+  W = rect.width; H = rect.height;
+  cv.width = W*DPR; cv.height = H*DPR;
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+window.addEventListener('resize', ()=>{ resize(); layoutCircle(); });
+
+// 初始位置：分类环形布局，子节点围绕所属分类
+let CAM = { x:0, y:0, k:1 };
+function layoutCircle(){
+  const cx=W/2, cy=H/2;
+  const R = Math.min(W,H)*0.34;
+  GROUPS.forEach((g,i)=>{
+    const a = (i/GROUPS.length)*Math.PI*2 - Math.PI/2;
+    const n = byId[g.id];
+    n.x = cx + Math.cos(a)*R; n.y = cy + Math.sin(a)*R;
+    n.vx=0; n.vy=0; n.fixed=false;
+  });
+  // 子节点散布在分类周围
+  const children = {};
+  nodes.forEach(n=>{ if(n.type!=='group'){ (children[n.group]=children[n.group]||[]).push(n); }});
+  Object.keys(children).forEach(g=>{
+    const arr=children[g]; const cn=byId[g];
+    arr.forEach((n,i)=>{
+      const a = (i/arr.length)*Math.PI*2;
+      const rad = 60 + (n.type==='doc'?40:0);
+      n.x = cn.x + Math.cos(a)*rad + (Math.random()-.5)*10;
+      n.y = cn.y + Math.sin(a)*rad + (Math.random()-.5)*10;
+      n.vx=0; n.vy=0; n.fixed=false;
+    });
+  });
+}
+
+function simulate(){
+  const k=0.02;                 // 弹簧
+  const rep=900;               // 斥力
+  const center={x:W/2,y:H/2};
+  // 斥力
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i],b=nodes[j];
+      let dx=a.x-b.x, dy=a.y-b.y; let d2=dx*dx+dy*dy+0.01; let d=Math.sqrt(d2);
+      let f=rep/d2; let fx=dx/d*f, fy=dy/d*f;
+      a.vx+=fx; a.vy+=fy; b.vx-=fx; b.vy-=fy;
+    }
+  }
+  // 弹簧（belong / doc 强吸引到分类；dep 弱吸引）
+  links.forEach(l=>{
+    const a=byId[l.s], b=byId[l.t]; if(!a||!b) return;
+    let dx=b.x-a.x, dy=b.y-a.y; let d=Math.sqrt(dx*dx+dy*dy)+0.01;
+    const rest = (l.kind==='dep')?160:90;
+    const f = (d-rest)*(l.kind==='dep'?0.008:0.02);
+    const fx=dx/d*f, fy=dy/d*f;
+    a.vx+=fx; a.vy+=fy; b.vx-=fx; b.vy-=fy;
+  });
+  // 向心 + 阻尼
+  nodes.forEach(n=>{
+    if(n.fixed){ n.vx=0; n.vy=0; }
+    n.vx += (center.x-n.x)*-0.0009;
+    n.vy += (center.y-n.y)*-0.0009;
+    n.vx*=0.86; n.vy*=0.86;
+    n.x+=n.vx; n.y+=n.vy;
+  });
+}
+
+// ============ 渲染 ============
+let showDocs=true, showDeps=true, highlight=null, searchTerm='';
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.translate(CAM.x,CAM.y); ctx.scale(CAM.k,CAM.k);
+
+  // 边
+  links.forEach(l=>{
+    if(l.kind==='doc' && !showDocs) return;
+    if(l.kind==='dep' && !showDeps) return;
+    const a=byId[l.s], b=byId[l.t]; if(!a||!b) return;
+    let active = !highlight || (a.group===highlight && b.group===highlight) || a.id===highlight || b.id===highlight || (l.kind==='dep'&&(a.id===highlight||b.id===highlight));
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+    if(l.kind==='dep'){
+      ctx.strokeStyle = active? 'rgba(255,200,120,0.55)':'rgba(255,200,120,0.08)';
+      ctx.setLineDash([4,4]); ctx.lineWidth=1.2;
+    } else if(l.kind==='doc'){
+      ctx.strokeStyle = active? 'rgba(157,167,179,0.5)':'rgba(157,167,179,0.08)';
+      ctx.setLineDash([2,3]); ctx.lineWidth=1;
+    } else {
+      ctx.strokeStyle = active? 'rgba(120,130,150,0.45)':'rgba(120,130,150,0.07)';
+      ctx.setLineDash([]); ctx.lineWidth=1.2;
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+  });
+
+  // 节点
+  nodes.forEach(n=>{
+    if(n.type==='doc' && !showDocs) return;
+    let active = !highlight || n.group===highlight || n.id===highlight;
+    let dim = highlight && !active;
+    const r = n.r * (n.id===highlight?1.25:1);
+    // 依赖高亮时，被高亮节点的依赖连线端点加重
+    ctx.beginPath(); ctx.arc(n.x,n.y,r,0,Math.PI*2);
+    ctx.fillStyle = n.color;
+    ctx.globalAlpha = dim?0.18:1;
+    ctx.fill();
+    if(n.type==='group'){
+      ctx.lineWidth=2; ctx.strokeStyle = dim?'rgba(255,255,255,0.1)':'rgba(255,255,255,0.85)';
+      ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+    // 标签
+    if(!dim && (n.type==='group' || n.r>8 || n.id===highlight || CAM.k>1.4)){
+      ctx.font = (n.type==='group'?'bold 13px':'11px')+' -apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+      ctx.fillStyle = dim?'#555': (n.type==='group'?'#fff':'#c9d4e0');
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(n.label, n.x, n.y + r + 9);
+    }
+  });
+  ctx.restore();
+}
+
+// ============ 交互 ============
+function screenToWorld(mx,my){ return { x:(mx-CAM.x)/CAM.k, y:(my-CAM.y)/CAM.k }; }
+function pick(mx,my){
+  const w=screenToWorld(mx,my);
+  let best=null,bd=1e9;
+  nodes.forEach(n=>{
+    if(n.type==='doc'&&!showDocs) return;
+    const d=Math.hypot(n.x-w.x,n.y-w.y);
+    if(d<n.r+6 && d<bd){ bd=d; best=n; }
+  });
+  return best;
+}
+let dragNode=null, panning=false, last={x:0,y:0};
+cv.addEventListener('mousedown',e=>{
+  const rect=cv.getBoundingClientRect(); const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const n=pick(mx,my);
+  if(n){ dragNode=n; n.fixed=true; }
+  else { panning=true; cv.classList.add('grabbing'); }
+  last={x:mx,y:my};
+});
+window.addEventListener('mousemove',e=>{
+  const rect=cv.getBoundingClientRect(); const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  if(dragNode){
+    const w=screenToWorld(mx,my); dragNode.x=w.x; dragNode.y=w.y; dragNode.vx=0; dragNode.vy=0;
+  } else if(panning){
+    CAM.x+=mx-last.x; CAM.y+=my-last.y; last={x:mx,y:my};
+  } else {
+    const n=pick(mx,my);
+    if(n){ tip.style.display='block'; tip.style.left=(mx+14)+'px'; tip.style.top=(my+14)+'px';
+      tip.innerHTML='<div class="t" style="color:'+n.color+'">'+n.label+'</div><div class="d">'+n.desc+(n.code?' · '+n.code+' 个 .rs':'')+'</div>';
+      cv.style.cursor='pointer';
+    } else { tip.style.display='none'; cv.style.cursor='grab'; }
+  }
+});
+window.addEventListener('mouseup',()=>{ if(dragNode) dragNode.fixed=false; dragNode=null; panning=false; cv.classList.remove('grabbing'); });
+cv.addEventListener('click',e=>{
+  const rect=cv.getBoundingClientRect(); const n=pick(e.clientX-rect.left,e.clientY-rect.top);
+  if(n){ showDetail(n); }
+});
+cv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const rect=cv.getBoundingClientRect(); const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+  const w=screenToWorld(mx,my);
+  const f = e.deltaY<0?1.12:0.89;
+  CAM.k=Math.max(0.3,Math.min(3,CAM.k*f));
+  CAM.x=mx-w.x*CAM.k; CAM.y=my-w.y*CAM.k;
+},{passive:false});
+
+// 图例
+const legendBox=document.getElementById('legend-items');
+GROUPS.forEach(g=>{
+  const el=document.createElement('div'); el.className='item';
+  el.innerHTML='<span class="dot" style="background:'+g.color+'"></span><span>'+g.name+'</span><span class="count">'+PROJECTS.filter(p=>p[0]===g.id).length+'</span>';
+  el.onclick=()=>{ highlight = (highlight===g.id)?null:g.id; detail.style.display='none'; };
+  legendBox.appendChild(el);
+});
+
+function showDetail(n){
+  if(n.type==='group'){
+    const kids=nodes.filter(x=>x.group===n.id && x.type!=='group');
+    const projs=kids.filter(x=>x.type==='proj').map(x=>x.label);
+    const docs=kids.filter(x=>x.type==='doc').map(x=>x.label);
+    detail.style.display='block';
+    detail.innerHTML='<div class="t" style="color:'+n.color+'">'+n.label+'</div>'+
+      '<div>练习 crate（'+projs.length+'）：</div><ul>'+projs.map(p=>'<li><span class="code">'+p+'</span></li>').join('')+'</ul>'+
+      (docs.length?'<div style="margin-top:6px">相关文档（'+docs.length+'）：</div><ul>'+docs.map(d=>'<li>'+d+'</li>').join('')+'</ul>':'');
+  } else {
+    const deps=DEPS.filter(d=>d[1]===n.label).map(d=>d[0]);
+    const usedBy=DEPS.filter(d=>d[0]===n.label).map(d=>d[1]);
+    detail.style.display='block';
+    detail.innerHTML='<div class="t" style="color:'+n.color+'">'+n.label+'</div>'+
+      '<div class="d">'+n.desc+(n.code?' · '+n.code+' 个 .rs':'')+'</div>'+
+      (deps.length?'<div style="margin-top:6px">依赖主题：</div><ul>'+deps.map(d=>'<li><span class="code">'+d+'</span></li>').join('')+'</ul>':'')+
+      (usedBy.length?'<div style="margin-top:6px">被依赖：</div><ul>'+usedBy.map(d=>'<li><span class="code">'+d+'</span></li>').join('')+'</ul>':'');
+  }
+}
+
+// 控件
+document.getElementById('tg-docs').onchange=e=>{ showDocs=e.target.checked; };
+document.getElementById('tg-deps').onchange=e=>{ showDeps=e.target.checked; };
+document.getElementById('reset').onclick=()=>{ CAM={x:0,y:0,k:1}; highlight=null; detail.style.display='none'; layoutCircle(); };
+document.getElementById('search').addEventListener('input',e=>{
+  const q=e.target.value.trim().toLowerCase();
+  if(!q){ highlight=null; return; }
+  const hit=nodes.find(n=>n.label.toLowerCase().includes(q));
+  highlight = hit? (hit.type==='proj'||hit.type==='doc'? hit.group : hit.id) : null;
+  if(hit){ // 居中
+    CAM.k=Math.max(CAM.k,1.2);
+    CAM.x=W/2-hit.x*CAM.k; CAM.y=H/2-hit.y*CAM.k;
+  }
+});
+
+// ============ 主循环 ============
+resize(); layoutCircle();
+let ticks=0;
+function loop(){
+  if(ticks<400){ simulate(); ticks++; }
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
