@@ -21,6 +21,9 @@ Desktop.ini
 # Claude
 .claude/
 
+# Internal workspace memory (WorkBuddy)
+.workbuddy/
+
 # Lock files (optional, uncomment if you don't want them)
 # **/Cargo.lock
 
